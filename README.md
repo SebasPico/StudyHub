@@ -1,17 +1,58 @@
-# tutorias_app
+# StudyHub - TutoríasApp
 
-A new Flutter project.
+Aplicación móvil en Flutter que conecta estudiantes con tutores para agendar clases particulares.
 
-## Getting Started
+## Comenzar
 
-This project is a starting point for a Flutter application.
+### Requisitos
 
-A few resources to get you started if this is your first Flutter project:
+- Flutter SDK instalado
+- Un emulador Android o dispositivo físico
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### Instalación
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+flutter run
+```
+
+## Credenciales de prueba
+
+La app usa datos mock (ficticios). Para iniciar sesión y explorar las interfaces, usa las siguientes credenciales en la pantalla de login. La contraseña puede ser cualquier texto.
+
+### Iniciar como Estudiante
+
+| Campo    | Valor              |
+|----------|--------------------|
+| Correo   | `juan@email.com`   |
+| Contraseña | cualquier texto  |
+
+Esto te lleva al panel de **Estudiante**, donde puedes:
+- Ver tutores destacados
+- Buscar tutores por materia
+- Ver historial de clases
+- Acceder al chat
+- Editar tu perfil
+
+### Iniciar como Tutor
+
+Usa cualquiera de estos correos:
+
+| Correo               | Tutor               |
+|----------------------|----------------------|
+| `maria@email.com`   | María García López   |
+| `carlos@email.com`  | Carlos Rodríguez     |
+| `ana@email.com`     | Ana Martínez         |
+| `diego@email.com`   | Diego López          |
+| `laura@email.com`   | Laura Sánchez        |
+
+Esto te lleva al panel de **Tutor**, donde puedes:
+- Ver tu dashboard con estadísticas
+- Gestionar horarios disponibles
+- Ver historial de sesiones
+- Acceder al chat con estudiantes
+- Editar tu perfil profesional
+
+### Cerrar sesión
+
+En ambos roles, ve a la pestaña **Perfil** y presiona el botón **Cerrar Sesión** para volver al login.
