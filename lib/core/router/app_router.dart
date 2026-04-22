@@ -30,6 +30,7 @@ import '../../features/admin/views/admin_dashboard_screen.dart';
 // Models
 import '../../data/mock/mock_data.dart';
 import '../../data/models/tutor_model.dart';
+import '../../data/models/session_model.dart';
 
 /// Configuración central de rutas de la aplicación.
 class AppRouter {
@@ -103,6 +104,13 @@ class AppRouter {
             subject: (extra?['subject'] as String?) ?? 'Clase de Tutoría',
             durationMinutes: (extra?['durationMinutes'] as int?) ?? 60,
             tutorName: (extra?['tutorName'] as String?) ?? 'Tutor',
+            tutorId: (extra?['tutorId'] as String?) ?? 't1',
+            tutorPhoto: extra?['tutorPhoto'] as String?,
+            modality: (extra?['modalidad'] as String?) ?? 'Online',
+            fechaHoraMs: (extra?['fechaHoraMs'] as int?) ??
+                DateTime.now()
+                    .add(const Duration(days: 2))
+                    .millisecondsSinceEpoch,
           );
         },
       ),
@@ -113,11 +121,12 @@ class AppRouter {
         name: 'chat',
         builder: (context, state) {
           final convId = state.pathParameters['conversationId']!;
-          final extra = state.extra as Map<String, String>?;
+          final extra = state.extra as Map<String, dynamic>?;
           return ChatScreen(
             conversationId: convId,
-            otherUserName: extra?['name'] ?? 'Usuario',
-            otherUserPhoto: extra?['photo'],
+            otherUserName: (extra?['name'] as String?) ?? 'Usuario',
+            otherUserPhoto: extra?['photo'] as String?,
+            otherUserId: (extra?['userId'] as String?) ?? convId,
           );
         },
       ),
@@ -126,7 +135,10 @@ class AppRouter {
       GoRoute(
         path: '/review',
         name: 'review',
-        builder: (context, state) => const ReviewScreen(),
+        builder: (context, state) {
+          final session = state.extra as SessionModel?;
+          return ReviewScreen(session: session);
+        },
       ),
 
       // ── Admin ──

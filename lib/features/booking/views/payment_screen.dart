@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_button.dart';
+import '../../../core/providers/session_provider.dart';
+import '../../../data/models/session_model.dart';
 
 /// Pantalla de pago simulado (RF-11).
 class PaymentScreen extends StatefulWidget {
@@ -10,6 +13,10 @@ class PaymentScreen extends StatefulWidget {
   final String subject;
   final int durationMinutes;
   final String tutorName;
+  final String tutorId;
+  final String? tutorPhoto;
+  final String modality;
+  final int fechaHoraMs;
 
   const PaymentScreen({
     super.key,
@@ -17,6 +24,10 @@ class PaymentScreen extends StatefulWidget {
     required this.subject,
     required this.durationMinutes,
     required this.tutorName,
+    required this.tutorId,
+    this.tutorPhoto,
+    required this.modality,
+    required this.fechaHoraMs,
   });
 
   @override
@@ -154,6 +165,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
               text: 'Pagar \$${widget.amount.toStringAsFixed(0)}',
               icon: Icons.lock_outline,
               onPressed: () {
+                final session = SessionModel(
+                  id: 'session_${DateTime.now().millisecondsSinceEpoch}',
+                  tutorId: widget.tutorId,
+                  tutorNombre: widget.tutorName,
+                  tutorFotoUrl: widget.tutorPhoto,
+                  estudianteId: 'e1',
+                  estudianteNombre: 'Juan Pérez',
+                  materia: widget.subject,
+                  fechaHora: DateTime.fromMillisecondsSinceEpoch(
+                      widget.fechaHoraMs),
+                  duracionMinutos: widget.durationMinutes,
+                  modalidad: widget.modality == 'Presencial'
+                      ? SessionModality.presencial
+                      : SessionModality.online,
+                  estado: SessionStatus.pendiente,
+                  precio: widget.amount,
+                );
+                context.read<SessionProvider>().addSession(session);
                 _showPaymentSuccess(context);
               },
             ),

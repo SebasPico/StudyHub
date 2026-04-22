@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../core/providers/session_provider.dart';
 import '../../../data/mock/mock_data.dart';
 import '../../../data/models/session_model.dart';
 
@@ -14,9 +16,8 @@ class TutorHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tutor = MockData.tutores.first;
-    final sesiones = MockData.sesiones;
-    final pendientes =
-        sesiones.where((s) => s.estado == SessionStatus.pendiente).toList();
+    final sessionProv = context.watch<SessionProvider>();
+    final pendientes = sessionProv.byStatus(SessionStatus.pendiente);
 
     return Scaffold(
       body: SafeArea(
@@ -198,10 +199,15 @@ class TutorHomeScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: OutlinedButton(
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    context
+                                        .read<SessionProvider>()
+                                        .rejectSession(sesion.id);
+                                  },
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: AppColors.error,
-                                    side: const BorderSide(color: AppColors.error),
+                                    side: const BorderSide(
+                                        color: AppColors.error),
                                   ),
                                   child: const Text('Rechazar'),
                                 ),
@@ -209,7 +215,11 @@ class TutorHomeScreen extends StatelessWidget {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: ElevatedButton(
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    context
+                                        .read<SessionProvider>()
+                                        .confirmSession(sesion.id);
+                                  },
                                   child: const Text('Aceptar'),
                                 ),
                               ),

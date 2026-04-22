@@ -291,6 +291,17 @@ class _BookingScreenState extends State<BookingScreen> {
               icon: Icons.payment,
               onPressed: _selectedSlotIndex >= 0
                   ? () {
+                      final dia = _dias[_selectedDayIndex];
+                      final horario = _horarios[_selectedSlotIndex];
+                      final horaInicio = horario.split(' - ').first;
+                      final hora =
+                          int.parse(horaInicio.split(':').first);
+                      final minuto =
+                          int.parse(horaInicio.split(':').last);
+                      final diaNum =
+                          int.parse(dia['fecha'] as String);
+                      final fechaHora =
+                          DateTime(2026, 3, diaNum, hora, minuto);
                       final total = tutor.tarifaPorHora * _duracion / 60;
                       context.push(
                         '/payment',
@@ -301,6 +312,11 @@ class _BookingScreenState extends State<BookingScreen> {
                               : 'Tutoría',
                           'durationMinutes': _duracion,
                           'tutorName': tutor.nombre,
+                          'tutorId': tutor.id,
+                          'tutorPhoto': tutor.fotoUrl ?? '',
+                          'modalidad': _selectedModality,
+                          'fechaHoraMs':
+                              fechaHora.millisecondsSinceEpoch,
                         },
                       );
                     }

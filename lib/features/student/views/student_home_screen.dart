@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/constants/app_constants.dart';
@@ -7,8 +8,8 @@ import '../../../core/widgets/custom_avatar.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/star_rating.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../core/providers/session_provider.dart';
 import '../../../data/mock/mock_data.dart';
-import '../../../data/models/session_model.dart';
 import '../../../data/models/tutor_model.dart';
 
 /// Pantalla principal del estudiante con búsqueda rápida y tutores destacados.
@@ -19,11 +20,7 @@ class StudentHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final estudiante = MockData.estudianteActual;
     final tutores = MockData.tutores.where((t) => t.aprobadoPorAdmin).toList();
-    final proximaSesion = MockData.sesiones
-        .where((s) =>
-            s.estado == SessionStatus.confirmada ||
-            s.estado == SessionStatus.pendiente)
-        .toList();
+    final proximaSesion = context.watch<SessionProvider>().upcoming;
 
     return Scaffold(
       body: SafeArea(

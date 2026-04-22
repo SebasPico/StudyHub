@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
 import '../../../core/widgets/status_badge.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../core/providers/session_provider.dart';
 import '../../../data/models/session_model.dart';
 
 /// Pantalla de historial de clases (RF-16).
@@ -30,13 +32,15 @@ class _SessionHistoryScreenState extends State<SessionHistoryScreen>
     super.dispose();
   }
 
-  List<SessionModel> _filterByStatus(SessionStatus? status) {
-    if (status == null) return MockData.sesiones;
-    return MockData.sesiones.where((s) => s.estado == status).toList();
+  List<SessionModel> _filterByStatus(
+      SessionStatus? status, List<SessionModel> all) {
+    if (status == null) return all;
+    return all.where((s) => s.estado == status).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final all = context.watch<SessionProvider>().sessions.toList();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mis Clases'),
@@ -57,10 +61,13 @@ class _SessionHistoryScreenState extends State<SessionHistoryScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _SessionList(sessions: _filterByStatus(null)),
-          _SessionList(sessions: _filterByStatus(SessionStatus.pendiente)),
-          _SessionList(sessions: _filterByStatus(SessionStatus.confirmada)),
-          _SessionList(sessions: _filterByStatus(SessionStatus.completada)),
+          _SessionList(sessions: _filterByStatus(null, all)),
+          _SessionList(
+              sessions: _filterByStatus(SessionStatus.pendiente, all)),
+          _SessionList(
+              sessions: _filterByStatus(SessionStatus.confirmada, all)),
+          _SessionList(
+              sessions: _filterByStatus(SessionStatus.completada, all)),
         ],
       ),
     );
@@ -103,6 +110,40 @@ class _SessionCard extends StatelessWidget {
   final SessionModel session;
 
   const _SessionCard({required this.session});
+
+  void _confirmCancel(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancelar clase'),
+        content:
+            const Text('¿Estás seguro de que quieres cancelar esta clase?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('No, mantener'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<SessionProvider>().cancelSession(session.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Clase cancelada'),
+                  backgroundColor: AppColors.error,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Sí, cancelar'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,13 +213,16 @@ class _SessionCard extends StatelessWidget {
               ),
 
               // Botón de calificar si completada (RF-15)
-              if (session.estado == SessionStatus.completada) ...[
+              if (session.estado == SessionStatus.completada &&
+                  !context
+                      .read<SessionProvider>()
+                      .hasReview(session.id)) ...[
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      // TODO: Navegar a calificar
+                      context.push('/review', extra: session);
                     },
                     icon: const Icon(Icons.star_outline, size: 18),
                     label: const Text('Calificar clase'),
@@ -194,7 +238,7 @@ class _SessionCard extends StatelessWidget {
                   width: double.infinity,
                   child: TextButton(
                     onPressed: () {
-                      // TODO: Cancelar sesión
+                      _confirmCancel(context);
                     },
                     style: TextButton.styleFrom(
                         foregroundColor: AppColors.error),

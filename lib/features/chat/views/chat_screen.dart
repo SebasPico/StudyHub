@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
-import '../../../data/mock/mock_data.dart';
-import '../../../data/models/chat_model.dart';
+import '../../../core/providers/chat_provider.dart';
 
 /// Pantalla de chat entre estudiante y tutor (RF-14).
 class ChatScreen extends StatefulWidget {
   final String conversationId;
   final String otherUserName;
   final String? otherUserPhoto;
+  final String otherUserId;
 
   const ChatScreen({
     super.key,
     required this.conversationId,
     required this.otherUserName,
     this.otherUserPhoto,
+    required this.otherUserId,
   });
 
   @override
@@ -24,18 +26,13 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
-  final _currentUserId = 'e1'; // Mock: estudiante actual
-  late final List<ChatMessage> _messages;
-
-  @override
-  void initState() {
-    super.initState();
-    _messages = List<ChatMessage>.from(MockData.mensajesChat);
-  }
+  final _scrollController = ScrollController();
+  final _currentUserId = 'e1';
 
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -79,21 +76,27 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           // Lista de mensajes
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                final isMe = msg.emisorId == _currentUserId;
-                return _MessageBubble(
-                  message: msg.contenido,
-                  time:
-                      '${msg.fecha.hour}:${msg.fecha.minute.toString().padLeft(2, '0')}',
-                  isMe: isMe,
-                  isRead: msg.leido,
-                );
-              },
-            ),
+            child: Builder(builder: (context) {
+              final messages = context
+                  .watch<ChatProvider>()
+                  .messagesFor(widget.conversationId);
+              return ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(16),
+                itemCount: messages.length,
+                itemBuilder: (context, index) {
+                  final msg = messages[index];
+                  final isMe = msg.emisorId == _currentUserId;
+                  return _MessageBubble(
+                    message: msg.contenido,
+                    time:
+                        '${msg.fecha.hour}:${msg.fecha.minute.toString().padLeft(2, '0')}',
+                    isMe: isMe,
+                    isRead: msg.leido,
+                  );
+                },
+              );
+            }),
           ),
 
           // Input de mensaje
@@ -145,19 +148,24 @@ class _ChatScreenState extends State<ChatScreen> {
                       onPressed: () {
                         final text = _controller.text.trim();
                         if (text.isEmpty) return;
-                        setState(() {
-                          _messages.add(
-                            ChatMessage(
-                              id: 'm${_messages.length + 1}',
-                              emisorId: _currentUserId,
-                              receptorId: widget.conversationId,
-                              contenido: text,
-                              fecha: DateTime.now(),
-                              leido: false,
-                            ),
-                          );
-                        });
+                        context.read<ChatProvider>().sendMessage(
+                              conversationId: widget.conversationId,
+                              senderId: _currentUserId,
+                              receiverId: widget.otherUserId,
+                              text: text,
+                              receiverName: widget.otherUserName,
+                              receiverPhoto: widget.otherUserPhoto,
+                            );
                         _controller.clear();
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (_scrollController.hasClients) {
+                            _scrollController.animateTo(
+                              _scrollController.position.maxScrollExtent,
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOut,
+                            );
+                          }
+                        });
                       },
                       icon: const Icon(Icons.send, color: Colors.white, size: 20),
                     ),

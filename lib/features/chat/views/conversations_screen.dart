@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../core/providers/chat_provider.dart';
 
 /// Pantalla de lista de conversaciones (RF-14).
 class ConversationsScreen extends StatelessWidget {
@@ -11,7 +12,7 @@ class ConversationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final conversaciones = MockData.conversaciones;
+    final conversaciones = context.watch<ChatProvider>().conversations;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mensajes')),
@@ -114,6 +115,7 @@ class ConversationsScreen extends StatelessWidget {
                       extra: {
                         'name': conv.otroUsuarioNombre,
                         'photo': conv.otroUsuarioFotoUrl,
+                        'userId': conv.otroUsuarioId,
                       },
                     );
                   },

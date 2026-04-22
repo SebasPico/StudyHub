@@ -36,4 +36,35 @@ class TutorModel extends UserModel {
     this.aprobadoPorAdmin = false,
     this.documentosVerificacion = const [],
   }) : super(rol: UserRole.tutor);
+
+  TutorModel copyWith({
+    bool? aprobadoPorAdmin,
+    bool? verificado,
+    String? biografia,
+    List<String>? materias,
+    List<String>? certificados,
+    double? tarifaPorHora,
+    Modalidad? modalidad,
+  }) {
+    return TutorModel(
+      id: id,
+      nombre: nombre,
+      correo: correo,
+      fotoUrl: fotoUrl,
+      telefono: telefono,
+      ubicacion: ubicacion,
+      fechaRegistro: fechaRegistro,
+      verificado: verificado ?? this.verificado,
+      biografia: biografia ?? this.biografia,
+      materias: materias ?? this.materias,
+      certificados: certificados ?? this.certificados,
+      tarifaPorHora: tarifaPorHora ?? this.tarifaPorHora,
+      modalidad: modalidad ?? this.modalidad,
+      calificacionPromedio: calificacionPromedio,
+      totalResenas: totalResenas,
+      clasesImpartidas: clasesImpartidas,
+      aprobadoPorAdmin: aprobadoPorAdmin ?? this.aprobadoPorAdmin,
+      documentosVerificacion: documentosVerificacion,
+    );
+  }
 }

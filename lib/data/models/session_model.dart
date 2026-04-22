@@ -44,6 +44,33 @@ class SessionModel {
     this.motivoCancelacion,
   });
 
+  /// Crea una copia con los campos indicados sobreescritos.
+  SessionModel copyWith({
+    SessionStatus? estado,
+    DateTime? fechaCancelacion,
+    String? motivoCancelacion,
+  }) {
+    return SessionModel(
+      id: id,
+      tutorId: tutorId,
+      tutorNombre: tutorNombre,
+      tutorFotoUrl: tutorFotoUrl,
+      estudianteId: estudianteId,
+      estudianteNombre: estudianteNombre,
+      materia: materia,
+      fechaHora: fechaHora,
+      duracionMinutos: duracionMinutos,
+      modalidad: modalidad,
+      estado: estado ?? this.estado,
+      precio: precio,
+      enlaceVideoconferencia: enlaceVideoconferencia,
+      ubicacionPresencial: ubicacionPresencial,
+      notas: notas,
+      fechaCancelacion: fechaCancelacion ?? this.fechaCancelacion,
+      motivoCancelacion: motivoCancelacion ?? this.motivoCancelacion,
+    );
+  }
+
   /// Devuelve el texto del estado.
   String get estadoTexto {
     switch (estado) {

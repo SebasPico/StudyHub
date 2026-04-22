@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../core/providers/tutor_provider.dart';
 
 /// Panel del administrador para aprobar tutores y gestionar plataforma.
 class AdminDashboardScreen extends StatelessWidget {
@@ -10,10 +11,9 @@ class AdminDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tutoresPendientes =
-        MockData.tutores.where((t) => !t.aprobadoPorAdmin).toList();
-    final tutoresAprobados =
-        MockData.tutores.where((t) => t.aprobadoPorAdmin).toList();
+    final tp = context.watch<TutorProvider>();
+    final tutoresPendientes = tp.pending;
+    final tutoresAprobados = tp.approved;
 
     return Scaffold(
       appBar: AppBar(
@@ -32,7 +32,7 @@ class AdminDashboardScreen extends StatelessWidget {
               children: [
                 _AdminStat(
                   icon: Icons.people,
-                  value: '${MockData.tutores.length + 1}',
+                  value: '${tp.all.length + 1}',
                   label: 'Usuarios',
                   color: AppColors.primary,
                 ),
@@ -57,7 +57,7 @@ class AdminDashboardScreen extends StatelessWidget {
               children: [
                 _AdminStat(
                   icon: Icons.calendar_today,
-                  value: '${MockData.sesiones.length}',
+                  value: '4',
                   label: 'Sesiones',
                   color: AppColors.info,
                 ),
@@ -167,10 +167,20 @@ class AdminDashboardScreen extends StatelessWidget {
                           children: [
                             Expanded(
                               child: OutlinedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  context
+                                      .read<TutorProvider>()
+                                      .removeTutor(tutor.id);
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(const SnackBar(
+                                    content: Text('Tutor rechazado'),
+                                    backgroundColor: AppColors.error,
+                                  ));
+                                },
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.error,
-                                  side: const BorderSide(color: AppColors.error),
+                                  side:
+                                      const BorderSide(color: AppColors.error),
                                 ),
                                 child: const Text('Rechazar'),
                               ),
@@ -178,7 +188,16 @@ class AdminDashboardScreen extends StatelessWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  context
+                                      .read<TutorProvider>()
+                                      .approveTutor(tutor.id);
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(const SnackBar(
+                                    content: Text('Tutor aprobado'),
+                                    backgroundColor: AppColors.secondary,
+                                  ));
+                                },
                                 child: const Text('Aprobar'),
                               ),
                             ),
