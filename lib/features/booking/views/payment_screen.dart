@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_button.dart';
 
 /// Pantalla de pago simulado (RF-11).
 class PaymentScreen extends StatefulWidget {
-  const PaymentScreen({super.key});
+  final double amount;
+  final String subject;
+  final int durationMinutes;
+  final String tutorName;
+
+  const PaymentScreen({
+    super.key,
+    required this.amount,
+    required this.subject,
+    required this.durationMinutes,
+    required this.tutorName,
+  });
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -44,10 +56,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   Text('Total a pagar',
                       style: AppTextStyles.body2.copyWith(color: Colors.white70)),
                   const SizedBox(height: 4),
-                  Text('\$45.000',
+                  Text('\$${widget.amount.toStringAsFixed(0)}',
                       style: AppTextStyles.heading1.copyWith(color: Colors.white)),
                   const SizedBox(height: 4),
-                  Text('Clase de Programación en Dart - 60 min',
+                  Text('Clase de ${widget.subject} - ${widget.durationMinutes} min',
                       style: AppTextStyles.caption.copyWith(color: Colors.white60)),
                 ],
               ),
@@ -139,7 +151,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             const SizedBox(height: 16),
 
             PrimaryButton(
-              text: 'Pagar \$45.000',
+              text: 'Pagar \$${widget.amount.toStringAsFixed(0)}',
               icon: Icons.lock_outline,
               onPressed: () {
                 _showPaymentSuccess(context);
@@ -175,7 +187,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             Text('¡Pago exitoso!', style: AppTextStyles.heading3),
             const SizedBox(height: 8),
             Text(
-              'Tu clase ha sido agendada. El tutor recibirá una notificación.',
+              'Tu clase con ${widget.tutorName} ha sido agendada. El tutor recibirá una notificación.',
               style: AppTextStyles.body2,
               textAlign: TextAlign.center,
             ),
@@ -184,6 +196,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               text: 'Ver mis clases',
               onPressed: () {
                 Navigator.of(context).pop();
+                context.go('/student');
               },
             ),
           ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
@@ -147,7 +148,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       return _TutorSearchCard(
                         tutor: resultados[index],
                         onTap: () {
-                          // TODO: Navegar al perfil del tutor
+                          context.push('/tutor-detail/${resultados[index].id}');
                         },
                       );
                     },

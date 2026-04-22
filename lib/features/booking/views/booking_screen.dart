@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
 import '../../../core/widgets/custom_button.dart';
-import '../../../core/widgets/status_badge.dart';
 import '../../../data/mock/mock_data.dart';
+import '../../../data/models/tutor_model.dart';
 
 /// Pantalla para agendar una sesión con un tutor (RF-09).
 class BookingScreen extends StatefulWidget {
-  const BookingScreen({super.key});
+  final TutorModel? selectedTutor;
+
+  const BookingScreen({super.key, this.selectedTutor});
 
   @override
   State<BookingScreen> createState() => _BookingScreenState();
@@ -39,7 +42,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tutor = MockData.tutores.first;
+    final tutor = widget.selectedTutor ?? MockData.tutores.first;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Agendar Clase')),
@@ -288,7 +291,18 @@ class _BookingScreenState extends State<BookingScreen> {
               icon: Icons.payment,
               onPressed: _selectedSlotIndex >= 0
                   ? () {
-                      // TODO: Navegar a pago
+                      final total = tutor.tarifaPorHora * _duracion / 60;
+                      context.push(
+                        '/payment',
+                        extra: {
+                          'amount': total,
+                          'subject': tutor.materias.isNotEmpty
+                              ? tutor.materias.first
+                              : 'Tutoría',
+                          'durationMinutes': _duracion,
+                          'tutorName': tutor.nombre,
+                        },
+                      );
                     }
                   : null,
             ),

@@ -3,6 +3,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
 import '../../../data/mock/mock_data.dart';
+import '../../../data/models/chat_model.dart';
 
 /// Pantalla de chat entre estudiante y tutor (RF-14).
 class ChatScreen extends StatefulWidget {
@@ -24,11 +25,22 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
   final _currentUserId = 'e1'; // Mock: estudiante actual
+  late final List<ChatMessage> _messages;
+
+  @override
+  void initState() {
+    super.initState();
+    _messages = List<ChatMessage>.from(MockData.mensajesChat);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final mensajes = MockData.mensajesChat;
-
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
@@ -69,9 +81,9 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: mensajes.length,
+              itemCount: _messages.length,
               itemBuilder: (context, index) {
-                final msg = mensajes[index];
+                final msg = _messages[index];
                 final isMe = msg.emisorId == _currentUserId;
                 return _MessageBubble(
                   message: msg.contenido,
@@ -131,7 +143,20 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     child: IconButton(
                       onPressed: () {
-                        // TODO: Enviar mensaje
+                        final text = _controller.text.trim();
+                        if (text.isEmpty) return;
+                        setState(() {
+                          _messages.add(
+                            ChatMessage(
+                              id: 'm${_messages.length + 1}',
+                              emisorId: _currentUserId,
+                              receptorId: widget.conversationId,
+                              contenido: text,
+                              fecha: DateTime.now(),
+                              leido: false,
+                            ),
+                          );
+                        });
                         _controller.clear();
                       },
                       icon: const Icon(Icons.send, color: Colors.white, size: 20),

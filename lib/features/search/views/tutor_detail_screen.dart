@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/constants/app_constants.dart';
@@ -254,7 +255,13 @@ class TutorDetailScreen extends StatelessWidget {
               ),
               child: IconButton(
                 onPressed: () {
-                  // TODO: Abrir chat
+                  context.push(
+                    '/chat/${tutor.id}',
+                    extra: {
+                      'name': tutor.nombre,
+                      'photo': tutor.fotoUrl,
+                    },
+                  );
                 },
                 icon: const Icon(Icons.chat_bubble_outline,
                     color: AppColors.primary),
@@ -267,7 +274,7 @@ class TutorDetailScreen extends StatelessWidget {
                 text: 'Agendar Clase',
                 icon: Icons.calendar_today,
                 onPressed: () {
-                  // TODO: Ir a agendar
+                  context.push('/booking', extra: tutor);
                 },
               ),
             ),

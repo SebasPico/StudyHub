@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // Auth
@@ -12,6 +11,7 @@ import '../../features/student/views/student_main_shell.dart';
 import '../../features/tutor/views/tutor_main_shell.dart';
 
 // Search / Detail
+import '../../features/search/views/search_screen.dart';
 import '../../features/search/views/tutor_detail_screen.dart';
 
 // Booking
@@ -29,6 +29,7 @@ import '../../features/admin/views/admin_dashboard_screen.dart';
 
 // Models
 import '../../data/mock/mock_data.dart';
+import '../../data/models/tutor_model.dart';
 
 /// Configuración central de rutas de la aplicación.
 class AppRouter {
@@ -55,6 +56,11 @@ class AppRouter {
         name: 'studentHome',
         builder: (context, state) => const StudentMainShell(),
       ),
+      GoRoute(
+        path: '/search',
+        name: 'search',
+        builder: (context, state) => const SearchScreen(),
+      ),
 
       // ── Tutor ──
       GoRoute(
@@ -78,14 +84,27 @@ class AppRouter {
       GoRoute(
         path: '/booking',
         name: 'booking',
-        builder: (context, state) => const BookingScreen(),
+        builder: (context, state) {
+          final tutor = state.extra;
+          return BookingScreen(
+            selectedTutor: tutor is TutorModel ? tutor : null,
+          );
+        },
       ),
 
       // ── Pago (RF-11) ──
       GoRoute(
         path: '/payment',
         name: 'payment',
-        builder: (context, state) => const PaymentScreen(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return PaymentScreen(
+            amount: (extra?['amount'] as num?)?.toDouble() ?? 45000,
+            subject: (extra?['subject'] as String?) ?? 'Clase de Tutoría',
+            durationMinutes: (extra?['durationMinutes'] as int?) ?? 60,
+            tutorName: (extra?['tutorName'] as String?) ?? 'Tutor',
+          );
+        },
       ),
 
       // ── Chat (RF-14) ──

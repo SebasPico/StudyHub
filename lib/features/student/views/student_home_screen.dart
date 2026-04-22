@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/constants/app_constants.dart';
@@ -69,7 +70,7 @@ class StudentHomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: GestureDetector(
                   onTap: () {
-                    // TODO: Navegar a pantalla de búsqueda
+                    context.push('/search');
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -199,7 +200,7 @@ class _TutorHighlightCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: InkWell(
         onTap: () {
-          // TODO: Navegar al perfil del tutor
+          context.push('/tutor-detail/${tutor.id}');
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
