@@ -15,6 +15,12 @@ class SessionProvider extends ChangeNotifier {
   List<SessionModel> get sessions => List.unmodifiable(_sessions);
   List<ReviewModel> get reviews => List.unmodifiable(_reviews);
 
+  SessionModel? byId(String id) {
+    return _sessions
+        .cast<SessionModel?>()
+        .firstWhere((s) => s!.id == id, orElse: () => null);
+  }
+
   List<SessionModel> byStatus(SessionStatus? status) {
     if (status == null) return List.unmodifiable(_sessions);
     return _sessions.where((s) => s.estado == status).toList();

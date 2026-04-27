@@ -36,6 +36,7 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   int _selectedMethod = 0;
+  bool _isProcessingPayment = false;
 
   final _paymentMethods = [
     {'icon': Icons.account_balance_wallet, 'name': 'Nequi', 'desc': '**** 4532'},
@@ -80,53 +81,64 @@ class _PaymentScreenState extends State<PaymentScreen> {
             // Método de pago
             Text('Método de pago', style: AppTextStyles.heading3),
             const SizedBox(height: 12),
-            ...List.generate(_paymentMethods.length, (index) {
-              final method = _paymentMethods[index];
-              final isSelected = _selectedMethod == index;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedMethod = index),
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary.withValues(alpha: 0.06)
-                        : AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.border,
-                      width: isSelected ? 2 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(method['icon'] as IconData,
-                          color:
-                              isSelected ? AppColors.primary : AppColors.textHint),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+            RadioGroup<int>(
+              groupValue: _selectedMethod,
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedMethod = value);
+                }
+              },
+              child: Column(
+                children: [
+                  ...List.generate(_paymentMethods.length, (index) {
+                    final method = _paymentMethods[index];
+                    final isSelected = _selectedMethod == index;
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedMethod = index),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary.withValues(alpha: 0.06)
+                              : AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color:
+                                isSelected ? AppColors.primary : AppColors.border,
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
                           children: [
-                            Text(method['name'] as String,
-                                style: AppTextStyles.subtitle1),
-                            Text(method['desc'] as String,
-                                style: AppTextStyles.caption),
+                            Icon(method['icon'] as IconData,
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.textHint),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(method['name'] as String,
+                                      style: AppTextStyles.subtitle1),
+                                  Text(method['desc'] as String,
+                                      style: AppTextStyles.caption),
+                                ],
+                              ),
+                            ),
+                            Radio<int>(
+                              value: index,
+                              activeColor: AppColors.primary,
+                            ),
                           ],
                         ),
                       ),
-                      Radio<int>(
-                        value: index,
-                        groupValue: _selectedMethod,
-                        onChanged: (v) =>
-                            setState(() => _selectedMethod = v!),
-                        activeColor: AppColors.primary,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
+                    );
+                  }),
+                ],
+              ),
+            ),
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: () {},
@@ -164,7 +176,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
             PrimaryButton(
               text: 'Pagar \$${widget.amount.toStringAsFixed(0)}',
               icon: Icons.lock_outline,
-              onPressed: () {
+              isLoading: _isProcessingPayment,
+              onPressed: () async {
+                if (_isProcessingPayment) return;
+                setState(() => _isProcessingPayment = true);
+                await Future<void>.delayed(const Duration(milliseconds: 800));
+                if (!context.mounted) return;
+
                 final session = SessionModel(
                   id: 'session_${DateTime.now().millisecondsSinceEpoch}',
                   tutorId: widget.tutorId,
@@ -183,6 +201,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   precio: widget.amount,
                 );
                 context.read<SessionProvider>().addSession(session);
+                setState(() => _isProcessingPayment = false);
                 _showPaymentSuccess(context);
               },
             ),
@@ -225,7 +244,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               text: 'Ver mis clases',
               onPressed: () {
                 Navigator.of(context).pop();
-                context.go('/student');
+                context.go('/student', extra: {'tab': 2});
               },
             ),
           ],

@@ -1,8 +1,11 @@
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 
 // Auth
 import '../../features/auth/views/login_screen.dart';
 import '../../features/auth/views/register_screen.dart';
+import '../../features/auth/views/splash_screen.dart';
 
 // Student
 import '../../features/student/views/student_main_shell.dart';
@@ -23,6 +26,7 @@ import '../../features/chat/views/chat_screen.dart';
 
 // Sessions
 import '../../features/sessions/views/review_screen.dart';
+import '../../features/sessions/views/session_detail_screen.dart';
 
 // Admin
 import '../../features/admin/views/admin_dashboard_screen.dart';
@@ -36,10 +40,72 @@ import '../../data/models/session_model.dart';
 class AppRouter {
   AppRouter._();
 
+  static const _authPaths = {'/login', '/register'};
+
+  static String _homeForRole(AuthProvider auth) {
+    if (auth.isAdmin) return '/admin';
+    if (auth.isTutor) return '/tutor';
+    return '/student';
+  }
+
+  static bool _hasAllowedPrefix(String path, List<String> prefixes) {
+    return prefixes.any(path.startsWith);
+  }
+
   static final GoRouter router = GoRouter(
-    initialLocation: '/login',
+    initialLocation: '/splash',
+    redirect: (context, state) {
+      final auth = context.read<AuthProvider>();
+      final path = state.uri.path;
+
+      if (!auth.isInitialized) {
+        return path == '/splash' ? null : '/splash';
+      }
+
+      if (path == '/splash') {
+        return auth.isLoggedIn ? _homeForRole(auth) : '/login';
+      }
+
+      if (!auth.isLoggedIn) {
+        return _authPaths.contains(path) ? null : '/login';
+      }
+
+      if (_authPaths.contains(path)) {
+        return _homeForRole(auth);
+      }
+
+      if (auth.isStudent) {
+        const allowed = [
+          '/student',
+          '/search',
+          '/tutor-detail',
+          '/booking',
+          '/payment',
+          '/chat',
+          '/session-detail',
+          '/review',
+        ];
+        return _hasAllowedPrefix(path, allowed) ? null : '/student';
+      }
+
+      if (auth.isTutor) {
+        const allowed = ['/tutor', '/chat'];
+        return _hasAllowedPrefix(path, allowed) ? null : '/tutor';
+      }
+
+      if (auth.isAdmin) {
+        return path == '/admin' ? null : '/admin';
+      }
+
+      return '/login';
+    },
     routes: [
       // ── Auth ──
+      GoRoute(
+        path: '/splash',
+        name: 'splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: '/login',
         name: 'login',
@@ -55,7 +121,11 @@ class AppRouter {
       GoRoute(
         path: '/student',
         name: 'studentHome',
-        builder: (context, state) => const StudentMainShell(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final initialTab = (extra?['tab'] as int?) ?? 0;
+          return StudentMainShell(initialIndex: initialTab);
+        },
       ),
       GoRoute(
         path: '/search',
@@ -138,6 +208,15 @@ class AppRouter {
         builder: (context, state) {
           final session = state.extra as SessionModel?;
           return ReviewScreen(session: session);
+        },
+      ),
+
+      GoRoute(
+        path: '/session-detail/:id',
+        name: 'sessionDetail',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return SessionDetailScreen(sessionId: id);
         },
       ),
 

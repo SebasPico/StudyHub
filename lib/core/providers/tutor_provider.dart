@@ -29,4 +29,28 @@ class TutorProvider extends ChangeNotifier {
     _tutors.removeWhere((t) => t.id == tutorId);
     notifyListeners();
   }
+
+  void updateTutor(
+    String tutorId, {
+    String? nombre,
+    String? ubicacion,
+    String? biografia,
+    List<String>? materias,
+    List<String>? certificados,
+    double? tarifaPorHora,
+    Modalidad? modalidad,
+  }) {
+    final idx = _tutors.indexWhere((t) => t.id == tutorId);
+    if (idx == -1) return;
+    _tutors[idx] = _tutors[idx].copyWith(
+      nombre: nombre,
+      ubicacion: ubicacion,
+      biografia: biografia,
+      materias: materias,
+      certificados: certificados,
+      tarifaPorHora: tarifaPorHora,
+      modalidad: modalidad,
+    );
+    notifyListeners();
+  }
 }

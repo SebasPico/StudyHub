@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/constants/app_constants.dart';
@@ -8,7 +9,7 @@ import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/star_rating.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/widgets/section_header.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../core/providers/session_provider.dart';
 import '../../../data/models/tutor_model.dart';
 
 /// Pantalla de detalle del perfil de un tutor (RF-07).
@@ -20,7 +21,7 @@ class TutorDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resenas =
-        MockData.resenas.where((r) => r.tutorId == tutor.id).toList();
+        context.watch<SessionProvider>().reviewsForTutor(tutor.id);
 
     return Scaffold(
       body: CustomScrollView(

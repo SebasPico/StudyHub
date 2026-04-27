@@ -23,14 +23,29 @@ class _BookingScreenState extends State<BookingScreen> {
   String _selectedModality = 'Online';
   int _duracion = 60;
 
-  final _dias = [
-    {'nombre': 'Lun', 'fecha': '10', 'slots': 3},
-    {'nombre': 'Mar', 'fecha': '11', 'slots': 2},
-    {'nombre': 'Mié', 'fecha': '12', 'slots': 4},
-    {'nombre': 'Jue', 'fecha': '13', 'slots': 1},
-    {'nombre': 'Vie', 'fecha': '14', 'slots': 3},
-    {'nombre': 'Sáb', 'fecha': '15', 'slots': 2},
+  static const _diasCortos = [
+    'Lun',
+    'Mar',
+    'Mié',
+    'Jue',
+    'Vie',
+    'Sáb',
+    'Dom',
   ];
+
+  List<Map<String, dynamic>> get _dias {
+    final now = DateTime.now();
+    return List.generate(6, (index) {
+      final date = now.add(Duration(days: index + 1));
+      final weekdayIndex = date.weekday - 1;
+      return {
+        'nombre': _diasCortos[weekdayIndex],
+        'fecha': date.day.toString().padLeft(2, '0'),
+        'slots': 1 + (index % 4),
+        'date': date,
+      };
+    });
+  }
 
   final _horarios = [
     '08:00 - 09:00',
@@ -43,6 +58,12 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     final tutor = widget.selectedTutor ?? MockData.tutores.first;
+    final selectedDay = _dias[_selectedDayIndex];
+    final availableSlotsCount =
+        (selectedDay['slots'] as int).clamp(1, _horarios.length);
+    final availableHorarios = _horarios.take(availableSlotsCount).toList();
+    final effectiveSelectedSlotIndex =
+      _selectedSlotIndex < availableHorarios.length ? _selectedSlotIndex : -1;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Agendar Clase')),
@@ -142,8 +163,8 @@ class _BookingScreenState extends State<BookingScreen> {
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: List.generate(_horarios.length, (index) {
-                final isSelected = _selectedSlotIndex == index;
+              children: List.generate(availableHorarios.length, (index) {
+                final isSelected = effectiveSelectedSlotIndex == index;
                 return GestureDetector(
                   onTap: () =>
                       setState(() => _selectedSlotIndex = index),
@@ -173,7 +194,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          _horarios[index],
+                          availableHorarios[index],
                           style: AppTextStyles.body2.copyWith(
                             color: isSelected
                                 ? Colors.white
@@ -266,6 +287,12 @@ class _BookingScreenState extends State<BookingScreen> {
                   _ResumenRow(
                       label: 'Tutor', value: tutor.nombre),
                   _ResumenRow(
+                    label: 'Fecha',
+                    value: effectiveSelectedSlotIndex >= 0
+                      ? '${selectedDay['nombre']} ${selectedDay['fecha']} · ${availableHorarios[effectiveSelectedSlotIndex].split(' - ').first}'
+                        : 'Selecciona un horario',
+                  ),
+                  _ResumenRow(
                       label: 'Modalidad', value: _selectedModality),
                   _ResumenRow(
                       label: 'Duración', value: '$_duracion minutos'),
@@ -289,19 +316,18 @@ class _BookingScreenState extends State<BookingScreen> {
             PrimaryButton(
               text: 'Confirmar y Pagar',
               icon: Icons.payment,
-              onPressed: _selectedSlotIndex >= 0
+                onPressed: effectiveSelectedSlotIndex >= 0
                   ? () {
-                      final dia = _dias[_selectedDayIndex];
-                      final horario = _horarios[_selectedSlotIndex];
+                    final horario =
+                      availableHorarios[effectiveSelectedSlotIndex];
                       final horaInicio = horario.split(' - ').first;
                       final hora =
                           int.parse(horaInicio.split(':').first);
                       final minuto =
                           int.parse(horaInicio.split(':').last);
-                      final diaNum =
-                          int.parse(dia['fecha'] as String);
+                      final fechaBase = selectedDay['date'] as DateTime;
                       final fechaHora =
-                          DateTime(2026, 3, diaNum, hora, minuto);
+                        DateTime(fechaBase.year, fechaBase.month, fechaBase.day, hora, minuto);
                       final total = tutor.tarifaPorHora * _duracion / 60;
                       context.push(
                         '/payment',

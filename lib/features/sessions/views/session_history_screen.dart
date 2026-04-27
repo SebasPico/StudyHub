@@ -90,6 +90,14 @@ class _SessionList extends StatelessWidget {
                 size: 64, color: AppColors.textHint),
             const SizedBox(height: 16),
             Text('No hay clases', style: AppTextStyles.heading3),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () {
+                context.go('/student', extra: {'tab': 1});
+              },
+              icon: const Icon(Icons.search),
+              label: const Text('Buscar un tutor'),
+            ),
           ],
         ),
       );
@@ -151,7 +159,7 @@ class _SessionCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
-          // TODO: Navegar al detalle de la sesión
+          context.push('/session-detail/${session.id}');
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(

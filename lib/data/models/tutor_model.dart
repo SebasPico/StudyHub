@@ -40,6 +40,8 @@ class TutorModel extends UserModel {
   TutorModel copyWith({
     bool? aprobadoPorAdmin,
     bool? verificado,
+    String? nombre,
+    String? ubicacion,
     String? biografia,
     List<String>? materias,
     List<String>? certificados,
@@ -48,11 +50,11 @@ class TutorModel extends UserModel {
   }) {
     return TutorModel(
       id: id,
-      nombre: nombre,
+      nombre: nombre ?? this.nombre,
       correo: correo,
       fotoUrl: fotoUrl,
       telefono: telefono,
-      ubicacion: ubicacion,
+      ubicacion: ubicacion ?? this.ubicacion,
       fechaRegistro: fechaRegistro,
       verificado: verificado ?? this.verificado,
       biografia: biografia ?? this.biografia,

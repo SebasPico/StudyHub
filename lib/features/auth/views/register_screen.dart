@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../data/models/user_model.dart';
 
 /// Pantalla de registro de usuario (RF-01).
 class RegisterScreen extends StatefulWidget {
@@ -16,9 +19,49 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nombreController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  bool _isSubmitting = false;
   String _selectedRole = AppConstants.rolEstudiante;
+  static final RegExp _emailRegex =
+      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (!mounted) return;
+
+    final rol = _selectedRole == AppConstants.rolTutor
+        ? UserRole.tutor
+        : UserRole.estudiante;
+    context.read<AuthProvider>().register(
+          _nombreController.text.trim(),
+          _emailController.text.trim(),
+          rol,
+        );
+
+    if (rol == UserRole.tutor) {
+      context.go('/tutor');
+    } else {
+      context.go('/student');
+    }
+  }
+
+  @override
+  void dispose() {
+    _nombreController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,9 +121,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 CustomTextField(
                   label: 'Nombre completo',
                   hint: 'Juan Pérez',
+                  controller: _nombreController,
+                  textInputAction: TextInputAction.next,
                   prefixIcon: Icons.person_outline,
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Ingresa tu nombre' : null,
+                  validator: (v) {
+                    final name = v?.trim() ?? '';
+                    if (name.isEmpty) return 'Ingresa tu nombre';
+                    if (name.length < 3) return 'Nombre demasiado corto';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
 
@@ -88,10 +137,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 CustomTextField(
                   label: 'Correo electrónico',
                   hint: 'tucorreo@email.com',
+                  controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                   prefixIcon: Icons.email_outlined,
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Ingresa tu correo' : null,
+                  validator: (v) {
+                    final email = v?.trim() ?? '';
+                    if (email.isEmpty) return 'Ingresa tu correo';
+                    if (!_emailRegex.hasMatch(email)) {
+                      return 'Ingresa un correo válido';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
 
@@ -99,7 +156,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 CustomTextField(
                   label: 'Contraseña',
                   hint: '••••••••',
+                  controller: _passwordController,
                   obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.next,
                   prefixIcon: Icons.lock_outline,
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -121,7 +180,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 CustomTextField(
                   label: 'Confirmar contraseña',
                   hint: '••••••••',
+                  controller: _confirmController,
                   obscureText: _obscureConfirm,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
                   prefixIcon: Icons.lock_outline,
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -134,24 +196,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: () =>
                         setState(() => _obscureConfirm = !_obscureConfirm),
                   ),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Confirma tu contraseña' : null,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) {
+                      return 'Confirma tu contraseña';
+                    }
+                    if (v != _passwordController.text) {
+                      return 'Las contraseñas no coinciden';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 32),
 
                 // Botón de registro
                 PrimaryButton(
                   text: 'Crear Cuenta',
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      // Registro mock: navegar según rol seleccionado
-                      if (_selectedRole == AppConstants.rolTutor) {
-                        context.go('/tutor');
-                      } else {
-                        context.go('/student');
-                      }
-                    }
-                  },
+                  isLoading: _isSubmitting,
+                  onPressed: _submit,
                 ),
                 const SizedBox(height: 16),
 

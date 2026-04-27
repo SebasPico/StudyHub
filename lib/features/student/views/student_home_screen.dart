@@ -9,6 +9,7 @@ import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/star_rating.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/providers/session_provider.dart';
+import '../../../core/providers/tutor_provider.dart';
 import '../../../data/mock/mock_data.dart';
 import '../../../data/models/tutor_model.dart';
 
@@ -19,7 +20,7 @@ class StudentHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final estudiante = MockData.estudianteActual;
-    final tutores = MockData.tutores.where((t) => t.aprobadoPorAdmin).toList();
+    final tutores = context.watch<TutorProvider>().approved;
     final proximaSesion = context.watch<SessionProvider>().upcoming;
 
     return Scaffold(

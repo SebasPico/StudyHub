@@ -8,14 +8,16 @@ import '../../../core/theme/app_colors.dart';
 
 /// Shell con BottomNavigationBar para el estudiante.
 class StudentMainShell extends StatefulWidget {
-  const StudentMainShell({super.key});
+  final int initialIndex;
+
+  const StudentMainShell({super.key, this.initialIndex = 0});
 
   @override
   State<StudentMainShell> createState() => _StudentMainShellState();
 }
 
 class _StudentMainShellState extends State<StudentMainShell> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
   final _screens = const [
     StudentHomeScreen(),
@@ -24,6 +26,13 @@ class _StudentMainShellState extends State<StudentMainShell> {
     ConversationsScreen(),
     StudentProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final idx = widget.initialIndex;
+    _currentIndex = idx >= 0 && idx < _screens.length ? idx : 0;
+  }
 
   @override
   Widget build(BuildContext context) {

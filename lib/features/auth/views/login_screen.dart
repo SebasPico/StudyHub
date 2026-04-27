@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../data/models/user_model.dart';
 
 /// Pantalla de inicio de sesión.
 class LoginScreen extends StatefulWidget {
@@ -17,11 +19,37 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isSubmitting = false;
+  static final RegExp _emailRegex =
+      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (!mounted) return;
+
+    final auth = context.read<AuthProvider>();
+    auth.login(_emailController.text.trim());
+
+    switch (auth.role) {
+      case UserRole.administrador:
+        context.go('/admin');
+      case UserRole.tutor:
+        context.go('/tutor');
+      default:
+        context.go('/student');
+    }
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -67,10 +95,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   hint: 'tucorreo@email.com',
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                   prefixIcon: Icons.email_outlined,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    final email = value?.trim() ?? '';
+                    if (email.isEmpty) {
                       return 'Ingresa tu correo electrónico';
+                    }
+                    if (!_emailRegex.hasMatch(email)) {
+                      return 'Ingresa un correo válido';
                     }
                     return null;
                   },
@@ -81,7 +114,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 CustomTextField(
                   label: 'Contraseña',
                   hint: '••••••••',
+                  controller: _passwordController,
                   obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
                   prefixIcon: Icons.lock_outline,
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -109,7 +145,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      // TODO: Navegar a recuperar contraseña
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Recuperación de contraseña estará disponible pronto',
+                          ),
+                        ),
+                      );
                     },
                     child: const Text('¿Olvidaste tu contraseña?'),
                   ),
@@ -119,20 +161,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Botón de iniciar sesión
                 PrimaryButton(
                   text: 'Iniciar Sesión',
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      final email = _emailController.text.trim().toLowerCase();
-                      // Login mock: verificar correo contra datos ficticios
-                      final esTutor = MockData.tutores.any(
-                        (t) => t.correo.toLowerCase() == email,
-                      );
-                      if (esTutor) {
-                        context.go('/tutor');
-                      } else {
-                        context.go('/student');
-                      }
-                    }
-                  },
+                  isLoading: _isSubmitting,
+                  onPressed: _submit,
                 ),
                 const SizedBox(height: 16),
 
@@ -154,7 +184,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   text: 'Continuar con Google',
                   icon: Icons.g_mobiledata_rounded,
                   onPressed: () {
-                    // TODO: Login con Google
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Inicio de sesión con Google en progreso'),
+                      ),
+                    );
                   },
                 ),
                 const SizedBox(height: 32),

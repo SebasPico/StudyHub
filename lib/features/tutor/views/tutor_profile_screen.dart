@@ -1,20 +1,121 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/tutor_provider.dart';
 import '../../../data/models/tutor_model.dart';
 
 /// Pantalla de edición del perfil del tutor (RF-03, RF-04).
-class TutorProfileScreen extends StatelessWidget {
+class TutorProfileScreen extends StatefulWidget {
   const TutorProfileScreen({super.key});
 
   @override
+  State<TutorProfileScreen> createState() => _TutorProfileScreenState();
+}
+
+class _TutorProfileScreenState extends State<TutorProfileScreen> {
+  final _nombreController = TextEditingController();
+  final _ubicacionController = TextEditingController();
+  final _biografiaController = TextEditingController();
+  final _tarifaController = TextEditingController();
+  Modalidad _modalidad = Modalidad.online;
+  List<String> _materias = [];
+  List<String> _certificados = [];
+  bool _initialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      final userId = context.read<AuthProvider>().userId;
+      final tutor = context.read<TutorProvider>().byId(userId) ??
+          context.read<TutorProvider>().all.firstOrNull;
+      if (tutor != null) {
+        _nombreController.text = tutor.nombre;
+        _ubicacionController.text = tutor.ubicacion ?? '';
+        _biografiaController.text = tutor.biografia;
+        _tarifaController.text = tutor.tarifaPorHora.toStringAsFixed(0);
+        _modalidad = tutor.modalidad;
+        _materias = List.from(tutor.materias);
+        _certificados = List.from(tutor.certificados);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _nombreController.dispose();
+    _ubicacionController.dispose();
+    _biografiaController.dispose();
+    _tarifaController.dispose();
+    super.dispose();
+  }
+
+  void _save(TutorModel tutor) {
+    final tarifa =
+        double.tryParse(_tarifaController.text) ?? tutor.tarifaPorHora;
+    context.read<TutorProvider>().updateTutor(
+          tutor.id,
+          nombre: _nombreController.text.trim(),
+          ubicacion: _ubicacionController.text.trim(),
+          biografia: _biografiaController.text.trim(),
+          tarifaPorHora: tarifa,
+          modalidad: _modalidad,
+          materias: List.from(_materias),
+          certificados: List.from(_certificados),
+        );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Perfil guardado'),
+        backgroundColor: AppColors.secondary,
+        behavior: SnackBarBehavior.floating,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  Future<void> _addText(
+      String titulo, void Function(String) onAdd) async {
+    final ctrl = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Agregar $titulo'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(hintText: 'Escribe aquí...'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: const Text('Agregar')),
+        ],
+      ),
+    );
+    if (result != null && result.isNotEmpty) onAdd(result);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final tutor = MockData.tutores.first;
+    final userId = context.watch<AuthProvider>().userId;
+    final tutor = context.watch<TutorProvider>().byId(userId) ??
+        context.watch<TutorProvider>().all.firstOrNull;
+
+    if (tutor == null) {
+      return const Scaffold(
+          body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mi Perfil de Tutor')),
@@ -56,33 +157,37 @@ class TutorProfileScreen extends StatelessWidget {
             Text('Información Básica', style: AppTextStyles.heading3),
             const SizedBox(height: 16),
 
-            const CustomTextField(
+            CustomTextField(
               label: 'Nombre completo',
               hint: 'María García López',
+              controller: _nombreController,
               prefixIcon: Icons.person_outline,
             ),
             const SizedBox(height: 16),
 
-            const CustomTextField(
+            CustomTextField(
               label: 'Ubicación',
               hint: 'Bogotá, Colombia',
+              controller: _ubicacionController,
               prefixIcon: Icons.location_on_outlined,
             ),
             const SizedBox(height: 16),
 
             // Biografía (RF-03)
-            const CustomTextField(
+            CustomTextField(
               label: 'Biografía',
               hint: 'Cuéntale a tus estudiantes sobre ti...',
+              controller: _biografiaController,
               maxLines: 4,
               prefixIcon: Icons.description_outlined,
             ),
             const SizedBox(height: 16),
 
             // Tarifa por hora
-            const CustomTextField(
+            CustomTextField(
               label: 'Tarifa por hora (\$)',
               hint: '45000',
+              controller: _tarifaController,
               keyboardType: TextInputType.number,
               prefixIcon: Icons.attach_money,
             ),
@@ -96,17 +201,20 @@ class TutorProfileScreen extends StatelessWidget {
                 _ModalityOption(
                   icon: Icons.videocam,
                   label: 'Online',
-                  isSelected: tutor.modalidad == Modalidad.online ||
-                      tutor.modalidad == Modalidad.ambas,
+                  isSelected: _modalidad == Modalidad.online ||
+                      _modalidad == Modalidad.ambas,
                   color: AppColors.online,
+                  onTap: () => setState(() => _modalidad = Modalidad.online),
                 ),
                 const SizedBox(width: 12),
                 _ModalityOption(
                   icon: Icons.location_on,
                   label: 'Presencial',
-                  isSelected: tutor.modalidad == Modalidad.presencial ||
-                      tutor.modalidad == Modalidad.ambas,
+                  isSelected: _modalidad == Modalidad.presencial ||
+                      _modalidad == Modalidad.ambas,
                   color: AppColors.presencial,
+                  onTap: () =>
+                      setState(() => _modalidad = Modalidad.presencial),
                 ),
               ],
             ),
@@ -119,17 +227,18 @@ class TutorProfileScreen extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                ...tutor.materias.map(
+                ..._materias.map(
                   (m) => Chip(
                     label: Text(m),
                     deleteIcon: const Icon(Icons.close, size: 16),
-                    onDeleted: () {},
+                    onDeleted: () => setState(() => _materias.remove(m)),
                   ),
                 ),
                 ActionChip(
                   avatar: const Icon(Icons.add, size: 18),
                   label: const Text('Agregar materia'),
-                  onPressed: () {},
+                  onPressed: () => _addText(
+                      'materia', (v) => setState(() => _materias.add(v))),
                 ),
               ],
             ),
@@ -138,7 +247,7 @@ class TutorProfileScreen extends StatelessWidget {
             // Certificados / Estudios
             Text('Certificados y Estudios', style: AppTextStyles.heading3),
             const SizedBox(height: 12),
-            ...tutor.certificados.map(
+            ..._certificados.map(
               (c) => ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const CircleAvatar(
@@ -150,12 +259,13 @@ class TutorProfileScreen extends StatelessWidget {
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline,
                       color: AppColors.error, size: 20),
-                  onPressed: () {},
+                  onPressed: () => setState(() => _certificados.remove(c)),
                 ),
               ),
             ),
             OutlinedButton.icon(
-              onPressed: () {},
+              onPressed: () => _addText('certificado',
+                  (v) => setState(() => _certificados.add(v))),
               icon: const Icon(Icons.upload_file),
               label: const Text('Subir certificado'),
             ),
@@ -200,13 +310,14 @@ class TutorProfileScreen extends StatelessWidget {
 
             PrimaryButton(
               text: 'Guardar Perfil',
-              onPressed: () {},
+              onPressed: () => _save(tutor),
             ),
             const SizedBox(height: 12),
             SecondaryButton(
               text: 'Cerrar Sesión',
               icon: Icons.logout,
               onPressed: () {
+                context.read<AuthProvider>().logout();
                 context.go('/login');
               },
             ),
@@ -223,19 +334,21 @@ class _ModalityOption extends StatelessWidget {
   final String label;
   final bool isSelected;
   final Color color;
+  final VoidCallback onTap;
 
   const _ModalityOption({
     required this.icon,
     required this.label,
     required this.isSelected,
     required this.color,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: GestureDetector(
-        onTap: () {},
+        onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(

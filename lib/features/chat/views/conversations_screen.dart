@@ -126,7 +126,7 @@ class ConversationsScreen extends StatelessWidget {
   }
 
   String _formatTime(DateTime date) {
-    final now = DateTime(2026, 3, 6);
+    final now = DateTime.now();
     final diff = now.difference(DateTime(date.year, date.month, date.day));
     if (diff.inDays == 0) {
       return '${date.hour}:${date.minute.toString().padLeft(2, '0')}';

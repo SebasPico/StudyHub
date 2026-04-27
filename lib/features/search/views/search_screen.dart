@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
 import '../../../core/widgets/star_rating.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../core/providers/tutor_provider.dart';
 import '../../../data/models/tutor_model.dart';
 
 /// Pantalla de búsqueda de tutores (RF-05, RF-06).
@@ -22,10 +23,42 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _selectedModalidad;
   RangeValues _priceRange = const RangeValues(10000, 100000);
   double _minRating = 0;
+  _SortBy _sortBy = _SortBy.relevance;
 
-  List<TutorModel> get _filteredTutors {
-    return MockData.tutores.where((t) {
-      if (!t.aprobadoPorAdmin) return false;
+  bool _matchesModalidad(TutorModel tutor) {
+    if (_selectedModalidad == null) return true;
+    if (_selectedModalidad == AppConstants.modalidadOnline) {
+      return tutor.modalidad == Modalidad.online ||
+          tutor.modalidad == Modalidad.ambas;
+    }
+    if (_selectedModalidad == AppConstants.modalidadPresencial) {
+      return tutor.modalidad == Modalidad.presencial ||
+          tutor.modalidad == Modalidad.ambas;
+    }
+    return true;
+  }
+
+  List<TutorModel> _applySorting(List<TutorModel> tutors) {
+    final sorted = List<TutorModel>.from(tutors);
+    switch (_sortBy) {
+      case _SortBy.ratingDesc:
+        sorted.sort(
+            (a, b) => b.calificacionPromedio.compareTo(a.calificacionPromedio));
+        break;
+      case _SortBy.priceAsc:
+        sorted.sort((a, b) => a.tarifaPorHora.compareTo(b.tarifaPorHora));
+        break;
+      case _SortBy.priceDesc:
+        sorted.sort((a, b) => b.tarifaPorHora.compareTo(a.tarifaPorHora));
+        break;
+      case _SortBy.relevance:
+        break;
+    }
+    return sorted;
+  }
+
+  List<TutorModel> _filterTutors(List<TutorModel> all) {
+    final filtered = all.where((t) {
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
         final matchesMaterias =
@@ -33,13 +66,26 @@ class _SearchScreenState extends State<SearchScreen> {
         final matchesNombre = t.nombre.toLowerCase().contains(q);
         if (!matchesMaterias && !matchesNombre) return false;
       }
+
+      if (!_matchesModalidad(t)) return false;
+
+      if (t.tarifaPorHora < _priceRange.start ||
+          t.tarifaPorHora > _priceRange.end) {
+        return false;
+      }
+
+      if (t.calificacionPromedio < _minRating) return false;
+
       return true;
     }).toList();
+
+    return _applySorting(filtered);
   }
 
   @override
   Widget build(BuildContext context) {
-    final resultados = _filteredTutors;
+    final resultados =
+        _filterTutors(context.watch<TutorProvider>().approved);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Buscar Tutores')),
@@ -115,9 +161,9 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 const Spacer(),
                 TextButton.icon(
-                  onPressed: () {},
+                  onPressed: () => _showSortOptions(context),
                   icon: const Icon(Icons.sort, size: 18),
-                  label: const Text('Ordenar'),
+                  label: Text(_sortByLabel(_sortBy)),
                 ),
               ],
             ),
@@ -256,7 +302,84 @@ class _SearchScreenState extends State<SearchScreen> {
       },
     );
   }
+
+  void _showSortOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.auto_awesome),
+                title: const Text('Relevancia'),
+                trailing: _sortBy == _SortBy.relevance
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  setState(() => _sortBy = _SortBy.relevance);
+                  Navigator.pop(ctx);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.star_outline),
+                title: const Text('Mejor calificación'),
+                trailing: _sortBy == _SortBy.ratingDesc
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  setState(() => _sortBy = _SortBy.ratingDesc);
+                  Navigator.pop(ctx);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.south),
+                title: const Text('Menor precio'),
+                trailing: _sortBy == _SortBy.priceAsc
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  setState(() => _sortBy = _SortBy.priceAsc);
+                  Navigator.pop(ctx);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.north),
+                title: const Text('Mayor precio'),
+                trailing: _sortBy == _SortBy.priceDesc
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  setState(() => _sortBy = _SortBy.priceDesc);
+                  Navigator.pop(ctx);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _sortByLabel(_SortBy value) {
+    switch (value) {
+      case _SortBy.relevance:
+        return 'Relevancia';
+      case _SortBy.ratingDesc:
+        return 'Calificación';
+      case _SortBy.priceAsc:
+        return 'Menor precio';
+      case _SortBy.priceDesc:
+        return 'Mayor precio';
+    }
+  }
 }
+
+enum _SortBy { relevance, ratingDesc, priceAsc, priceDesc }
 
 class _FilterChip extends StatelessWidget {
   final String label;
