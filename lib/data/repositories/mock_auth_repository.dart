@@ -6,7 +6,7 @@ import 'auth_repository.dart';
 /// Implementacion mock de autenticacion lista para sustituirse por API real.
 class MockAuthRepository implements AuthRepository {
   @override
-  Future<AuthSessionModel?> login({
+  Future<AuthSessionModel> login({
     required String email,
     required String password,
   }) async {

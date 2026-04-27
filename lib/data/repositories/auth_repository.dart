@@ -3,7 +3,7 @@ import '../models/user_model.dart';
 
 /// Contrato de autenticacion para desacoplar UI/Provider del backend.
 abstract class AuthRepository {
-  Future<AuthSessionModel?> login({
+  Future<AuthSessionModel> login({
     required String email,
     required String password,
   });

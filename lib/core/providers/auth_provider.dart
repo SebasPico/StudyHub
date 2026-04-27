@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../data/models/auth_session_model.dart';
+import '../../data/models/auth_failure.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/mock_auth_repository.dart';
@@ -99,21 +100,46 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
-  /// Autentica por repositorio. Devuelve null si exitoso.
-  Future<String?> login(String email, {String password = ''}) async {
-    final session = await _authRepository.login(
-      email: email,
-      password: password,
-    );
-
-    if (session == null) {
-      return 'Credenciales invalidas';
+  String _mapFailureToMessage(AuthFailure failure) {
+    if (failure.message != null && failure.message!.trim().isNotEmpty) {
+      return failure.message!;
     }
 
-    _applySession(session);
-    await _persistCurrentSession();
-    notifyListeners();
-    return null;
+    switch (failure.code) {
+      case AuthFailureCode.invalidCredentials:
+        return 'Correo o contrasena invalidos';
+      case AuthFailureCode.userAlreadyExists:
+        return 'Ya existe una cuenta con ese correo';
+      case AuthFailureCode.network:
+        return 'Sin conexion. Revisa tu internet';
+      case AuthFailureCode.server:
+        return 'No pudimos autenticarte. Intenta nuevamente';
+      case AuthFailureCode.notImplemented:
+        return 'Autenticacion API aun no implementada';
+      case AuthFailureCode.unknown:
+        return 'Ocurrio un error inesperado';
+    }
+  }
+
+  /// Autentica por repositorio. Devuelve null si exitoso.
+  Future<String?> login(String email, {String password = ''}) async {
+    try {
+      final session = await _authRepository.login(
+        email: email,
+        password: password,
+      );
+
+      _applySession(session);
+      await _persistCurrentSession();
+      notifyListeners();
+      return null;
+    } on AuthFailure catch (failure) {
+      return _mapFailureToMessage(failure);
+    } catch (_) {
+      return _mapFailureToMessage(
+        const AuthFailure(AuthFailureCode.unknown),
+      );
+    }
   }
 
   /// Registra un usuario por repositorio. Devuelve null si exitoso.
@@ -123,16 +149,24 @@ class AuthProvider extends ChangeNotifier {
     UserRole rol, {
     String password = '',
   }) async {
-    final session = await _authRepository.register(
-      nombre: nombre,
-      email: email,
-      rol: rol,
-      password: password,
-    );
-    _applySession(session);
-    await _persistCurrentSession();
-    notifyListeners();
-    return null;
+    try {
+      final session = await _authRepository.register(
+        nombre: nombre,
+        email: email,
+        rol: rol,
+        password: password,
+      );
+      _applySession(session);
+      await _persistCurrentSession();
+      notifyListeners();
+      return null;
+    } on AuthFailure catch (failure) {
+      return _mapFailureToMessage(failure);
+    } catch (_) {
+      return _mapFailureToMessage(
+        const AuthFailure(AuthFailureCode.unknown),
+      );
+    }
   }
 
   /// Cierra la sesión actual.
