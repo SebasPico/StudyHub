@@ -34,7 +34,19 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     final auth = context.read<AuthProvider>();
-    auth.login(_emailController.text.trim());
+    final error = await auth.login(
+      _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+      return;
+    }
 
     switch (auth.role) {
       case UserRole.administrador:

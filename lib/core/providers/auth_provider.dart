@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
-import '../../data/mock/mock_data.dart';
+import '../../data/models/auth_session_model.dart';
 import '../../data/models/user_model.dart';
+import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/mock_auth_repository.dart';
 import '../services/auth_session_storage.dart';
 
 /// Gestión del estado de autenticación y perfil del usuario actual.
 class AuthProvider extends ChangeNotifier {
-  final AuthSessionStorage _storage = AuthSessionStorage();
+  final AuthSessionStorage _storage;
+  final AuthRepository _authRepository;
   UserRole? _role;
   String _userId = '';
   String _userName = '';
@@ -14,7 +17,11 @@ class AuthProvider extends ChangeNotifier {
   String _userPhone = '';
   bool _isInitialized = false;
 
-  AuthProvider() {
+  AuthProvider({
+    AuthSessionStorage? storage,
+    AuthRepository? authRepository,
+  })  : _storage = storage ?? AuthSessionStorage(),
+        _authRepository = authRepository ?? MockAuthRepository() {
     initialize();
   }
 
@@ -30,16 +37,27 @@ class AuthProvider extends ChangeNotifier {
   String get userLocation => _userLocation;
   String get userPhone => _userPhone;
 
+  void _applySession(AuthSessionModel session) {
+    _role = session.role;
+    _userId = session.userId;
+    _userName = session.userName;
+    _userPhoto = session.userPhoto;
+    _userLocation = session.userLocation;
+    _userPhone = session.userPhone;
+  }
+
   Future<void> initialize() async {
     final raw = await _storage.read();
     final roleRaw = raw['role'];
     if (roleRaw != null && roleRaw.isNotEmpty) {
-      _role = _parseRole(roleRaw);
-      _userId = raw['userId'] ?? '';
-      _userName = raw['userName'] ?? '';
-      _userPhoto = raw['userPhoto'];
-      _userLocation = raw['userLocation'] ?? '';
-      _userPhone = raw['userPhone'] ?? '';
+      _applySession(AuthSessionModel(
+        role: _parseRole(roleRaw),
+        userId: raw['userId'] ?? '',
+        userName: raw['userName'] ?? '',
+        userPhoto: raw['userPhoto'],
+        userLocation: raw['userLocation'] ?? '',
+        userPhone: raw['userPhone'] ?? '',
+      ));
     }
 
     _isInitialized = true;
@@ -81,62 +99,40 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
-  /// Autentica por email (mock). Devuelve null si exitoso.
-  String? login(String email) {
-    final emailLower = email.trim().toLowerCase();
+  /// Autentica por repositorio. Devuelve null si exitoso.
+  Future<String?> login(String email, {String password = ''}) async {
+    final session = await _authRepository.login(
+      email: email,
+      password: password,
+    );
 
-    // Administrador
-    if (emailLower == 'admin@studyhub.com') {
-      _role = UserRole.administrador;
-      _userId = 'admin1';
-      _userName = 'Administrador';
-      _userPhoto = null;
-      _userLocation = '';
-      _userPhone = '';
-      _persistCurrentSession();
-      notifyListeners();
-      return null;
+    if (session == null) {
+      return 'Credenciales invalidas';
     }
 
-    // Tutor
-    final tutor = MockData.tutores
-        .where((t) => t.correo.toLowerCase() == emailLower)
-        .firstOrNull;
-    if (tutor != null) {
-      _role = UserRole.tutor;
-      _userId = tutor.id;
-      _userName = tutor.nombre;
-      _userPhoto = tutor.fotoUrl;
-      _userLocation = tutor.ubicacion ?? '';
-      _userPhone = tutor.telefono ?? '';
-      _persistCurrentSession();
-      notifyListeners();
-      return null;
-    }
-
-    // Cualquier otro correo válido = estudiante
-    final student = MockData.estudianteActual;
-    _role = UserRole.estudiante;
-    _userId = student.id;
-    _userName = student.nombre;
-    _userPhoto = student.fotoUrl;
-    _userLocation = student.ubicacion ?? '';
-    _userPhone = student.telefono ?? '';
-    _persistCurrentSession();
+    _applySession(session);
+    await _persistCurrentSession();
     notifyListeners();
     return null;
   }
 
-  /// Registra un usuario nuevo (mock: no persiste entre sesiones).
-  void register(String nombre, String email, UserRole rol) {
-    _role = rol == UserRole.tutor ? UserRole.tutor : UserRole.estudiante;
-    _userId = rol == UserRole.tutor ? 't_new' : 'e_new';
-    _userName = nombre;
-    _userPhoto = null;
-    _userLocation = '';
-    _userPhone = '';
-    _persistCurrentSession();
+  /// Registra un usuario por repositorio. Devuelve null si exitoso.
+  Future<String?> register(
+    String nombre,
+    String email,
+    UserRole rol, {
+    String password = '',
+  }) async {
+    final session = await _authRepository.register(
+      nombre: nombre,
+      email: email,
+      rol: rol,
+      password: password,
+    );
+    _applySession(session);
+    await _persistCurrentSession();
     notifyListeners();
+    return null;
   }
 
   /// Cierra la sesión actual.

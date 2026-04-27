@@ -7,6 +7,7 @@ import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/star_rating.dart';
 import '../../../core/widgets/custom_avatar.dart';
 import '../../../core/providers/session_provider.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../data/models/session_model.dart';
 import '../../../data/models/review_model.dart';
 
@@ -140,6 +141,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   ? () {
                       final session = widget.session;
                       if (session != null) {
+                        final auth = context.read<AuthProvider>();
                         final tagText = _selectedTags.isNotEmpty
                             ? '\n\nDestacado: ${_selectedTags.join(', ')}'
                             : '';
@@ -148,10 +150,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                 id: 'r_${DateTime.now().millisecondsSinceEpoch}',
                                 sesionId: session.id,
                                 tutorId: session.tutorId,
-                                estudianteId: 'e1',
-                                estudianteNombre: 'Juan Pérez',
-                                estudianteFotoUrl:
-                                    'https://i.pravatar.cc/150?img=11',
+                            estudianteId: auth.userId,
+                            estudianteNombre: auth.userName,
+                            estudianteFotoUrl: auth.userPhoto,
                                 calificacion: _rating,
                                 comentario:
                                     '${_commentController.text.trim()}$tagText',

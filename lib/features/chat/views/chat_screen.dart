@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
 import '../../../core/providers/chat_provider.dart';
+import '../../../core/providers/auth_provider.dart';
 
 /// Pantalla de chat entre estudiante y tutor (RF-14).
 class ChatScreen extends StatefulWidget {
@@ -27,7 +28,6 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
-  final _currentUserId = 'e1';
 
   @override
   void dispose() {
@@ -38,6 +38,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUserId = context.watch<AuthProvider>().userId;
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
@@ -86,7 +87,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 itemCount: messages.length,
                 itemBuilder: (context, index) {
                   final msg = messages[index];
-                  final isMe = msg.emisorId == _currentUserId;
+                  final isMe = msg.emisorId == currentUserId;
                   return _MessageBubble(
                     message: msg.contenido,
                     time:
@@ -150,7 +151,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         if (text.isEmpty) return;
                         context.read<ChatProvider>().sendMessage(
                               conversationId: widget.conversationId,
-                              senderId: _currentUserId,
+                          senderId: currentUserId,
                               receiverId: widget.otherUserId,
                               text: text,
                               receiverName: widget.otherUserName,

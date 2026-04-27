@@ -41,11 +41,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final rol = _selectedRole == AppConstants.rolTutor
         ? UserRole.tutor
         : UserRole.estudiante;
-    context.read<AuthProvider>().register(
+    final error = await context.read<AuthProvider>().register(
           _nombreController.text.trim(),
           _emailController.text.trim(),
           rol,
+          password: _passwordController.text,
         );
+
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+      return;
+    }
 
     if (rol == UserRole.tutor) {
       context.go('/tutor');
