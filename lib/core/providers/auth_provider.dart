@@ -57,26 +57,32 @@ class AuthProvider extends ChangeNotifier {
   Future<void> initialize() async {
     final raw = await _storage.read();
     final biometricEnabled = await _storage.isBiometricEnabled();
-    final roleRaw = raw['role'];
-    if (roleRaw != null && roleRaw.isNotEmpty) {
-      final session = AuthSessionModel(
-        role: _parseRole(roleRaw),
-        userId: raw['userId'] ?? '',
-        userName: raw['userName'] ?? '',
-        userPhoto: raw['userPhoto'],
-        userLocation: raw['userLocation'] ?? '',
-        userPhone: raw['userPhone'] ?? '',
-      );
+    try {
+      // Avoid blocking splash indefinitely if SharedPreferences is slow.
+      final raw = await _storage.read().timeout(const Duration(seconds: 2));
+      final roleRaw = raw['role'];
+      if (roleRaw != null && roleRaw.isNotEmpty) {
+        final session = AuthSessionModel(
+          role: _parseRole(roleRaw),
+          userId: raw['userId'] ?? '',
+          userName: raw['userName'] ?? '',
+          userPhoto: raw['userPhoto'],
+          userLocation: raw['userLocation'] ?? '',
+          userPhone: raw['userPhone'] ?? '',
+        );
 
-      if (biometricEnabled) {
-        _pendingBiometricSession = session;
-      } else {
-        _applySession(session);
+        if (biometricEnabled) {
+          _pendingBiometricSession = session;
+        } else {
+          _applySession(session);
+        }
       }
+    } catch (e) {
+      // If reading storage times out or fails, proceed so the UI can continue.
+    } finally {
+      _isInitialized = true;
+      notifyListeners();
     }
-
-    _isInitialized = true;
-    notifyListeners();
   }
 
   UserRole _parseRole(String raw) {
