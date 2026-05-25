@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/services/studyhub_local_backend.dart';
 import '../../../data/models/time_slot_model.dart';
 
 /// Pantalla de gestión de calendario/disponibilidad del tutor (RF-08).
@@ -14,6 +16,7 @@ class TutorScheduleScreen extends StatefulWidget {
 
 class _TutorScheduleScreenState extends State<TutorScheduleScreen> {
   late List<TimeSlotModel> _slots;
+  late String _tutorId;
 
   static const _diasSemana = [
     'Lunes', 'Martes', 'Miércoles', 'Jueves',
@@ -23,29 +26,43 @@ class _TutorScheduleScreenState extends State<TutorScheduleScreen> {
   @override
   void initState() {
     super.initState();
-    _slots = List<TimeSlotModel>.from(MockData.horariosDisponibles);
+    _slots = const [];
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.read<AuthProvider>();
+    _tutorId = auth.userId;
+    _slots = StudyHubLocalBackend.instance
+        .timeSlots
+        .where((slot) => slot.tutorId == _tutorId)
+        .toList();
   }
 
   void _toggleDay(int dia) {
     final slotsDelDia = _slots.where((s) => s.diaSemana == dia).toList();
     final allAvailable = slotsDelDia.every((s) => s.disponible);
-    setState(() {
-      _slots = _slots.map((s) {
-        if (s.diaSemana != dia) return s;
-        return TimeSlotModel(
-          id: s.id,
-          tutorId: s.tutorId,
-          diaSemana: s.diaSemana,
-          horaInicio: s.horaInicio,
-          horaFin: s.horaFin,
-          disponible: !allAvailable,
-        );
-      }).toList();
-    });
+    final updated = _slots.map((s) {
+      if (s.diaSemana != dia) return s;
+      return TimeSlotModel(
+        id: s.id,
+        tutorId: s.tutorId,
+        diaSemana: s.diaSemana,
+        horaInicio: s.horaInicio,
+        horaFin: s.horaFin,
+        disponible: !allAvailable,
+      );
+    }).toList();
+    setState(() => _slots = updated);
+    for (final slot in updated.where((s) => s.diaSemana == dia)) {
+      StudyHubLocalBackend.instance.upsertTimeSlot(slot);
+    }
   }
 
   void _removeSlot(String id) {
     setState(() => _slots.removeWhere((s) => s.id == id));
+    StudyHubLocalBackend.instance.removeTimeSlot(id);
   }
 
   Future<void> _showAddDialog() async {
@@ -99,15 +116,15 @@ class _TutorScheduleScreenState extends State<TutorScheduleScreen> {
                 final inicio = inicioCtrl.text.trim();
                 final fin = finCtrl.text.trim();
                 if (inicio.isNotEmpty && fin.isNotEmpty) {
-                  setState(() {
-                    _slots.add(TimeSlotModel(
-                      id: 'slot_${DateTime.now().millisecondsSinceEpoch}',
-                      tutorId: 't1',
-                      diaSemana: selectedDia,
-                      horaInicio: inicio,
-                      horaFin: fin,
-                    ));
-                  });
+                  final slot = TimeSlotModel(
+                    id: 'slot_${DateTime.now().millisecondsSinceEpoch}',
+                    tutorId: _tutorId,
+                    diaSemana: selectedDia,
+                    horaInicio: inicio,
+                    horaFin: fin,
+                  );
+                  setState(() => _slots.add(slot));
+                  StudyHubLocalBackend.instance.upsertTimeSlot(slot);
                 }
                 Navigator.pop(ctx);
               },

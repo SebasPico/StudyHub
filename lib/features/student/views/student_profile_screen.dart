@@ -7,7 +7,8 @@ import '../../../core/widgets/custom_avatar.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../core/providers/session_provider.dart';
+import '../../../core/services/studyhub_local_backend.dart';
 
 /// Pantalla de edición de perfil del estudiante (RF-02).
 class StudentProfileScreen extends StatefulWidget {
@@ -29,18 +30,17 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     if (!_initialized) {
       _initialized = true;
       final auth = context.read<AuthProvider>();
-      // Pre-fill from AuthProvider if logged in, otherwise use mock data
-      final estudiante = MockData.estudianteActual;
+      final estudiante = StudyHubLocalBackend.instance.studentById(auth.userId);
       _nombreController.text =
-          auth.userName.isNotEmpty ? auth.userName : estudiante.nombre;
+        auth.userName.isNotEmpty ? auth.userName : (estudiante?.nombre ?? '');
       _ubicacionController.text =
           auth.userLocation.isNotEmpty
               ? auth.userLocation
-              : estudiante.ubicacion ?? '';
+          : (estudiante?.ubicacion ?? '');
       _telefonoController.text =
           auth.userPhone.isNotEmpty
               ? auth.userPhone
-              : estudiante.telefono ?? '';
+          : (estudiante?.telefono ?? '');
     }
   }
 
@@ -54,8 +54,14 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final estudiante = MockData.estudianteActual;
     final auth = context.watch<AuthProvider>();
+    final estudiante = StudyHubLocalBackend.instance.studentById(auth.userId);
+    final historial = context
+        .watch<SessionProvider>()
+        .sessions
+        .where((sesion) => sesion.estudianteId == auth.userId)
+        .toList();
+    final materiasInteres = estudiante?.materiasInteres ?? const [];
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mi Perfil')),
@@ -65,11 +71,11 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           children: [
             // Avatar
             CustomAvatar(
-              imageUrl: auth.userPhoto ?? estudiante.fotoUrl,
+              imageUrl: auth.userPhoto ?? estudiante?.fotoUrl,
               size: 100,
               initials: (auth.userName.isNotEmpty
                       ? auth.userName
-                      : estudiante.nombre)
+                      : (estudiante?.nombre ?? 'ES'))
                   .substring(0, 2)
                   .toUpperCase(),
               showEditIcon: true,
@@ -77,10 +83,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              auth.userName.isNotEmpty ? auth.userName : estudiante.nombre,
+              auth.userName.isNotEmpty
+                  ? auth.userName
+                  : (estudiante?.nombre ?? 'Estudiante'),
               style: AppTextStyles.heading3,
             ),
-            Text(estudiante.correo, style: AppTextStyles.body2),
+            Text(estudiante?.correo ?? '', style: AppTextStyles.body2),
             const SizedBox(height: 24),
 
             // Estadísticas
@@ -94,12 +102,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _StatItem(
-                    value: '${estudiante.clasesTomadas}',
+                    value: '${historial.length}',
                     label: 'Clases',
                   ),
                   Container(width: 1, height: 40, color: AppColors.border),
                   _StatItem(
-                    value: '${estudiante.materiasInteres.length}',
+                    value: '${materiasInteres.length}',
                     label: 'Materias',
                   ),
                   Container(width: 1, height: 40, color: AppColors.border),
@@ -144,7 +152,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                ...estudiante.materiasInteres.map(
+                ...materiasInteres.map(
                   (m) => Chip(
                     label: Text(m),
                     deleteIcon: const Icon(Icons.close, size: 16),
@@ -162,8 +170,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
 
             PrimaryButton(
               text: 'Guardar Cambios',
-              onPressed: () {
-                context.read<AuthProvider>().updateProfile(
+              onPressed: () async {
+                await context.read<AuthProvider>().updateProfile(
                       nombre: _nombreController.text.trim(),
                       ubicacion: _ubicacionController.text.trim(),
                       telefono: _telefonoController.text.trim(),

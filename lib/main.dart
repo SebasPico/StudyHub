@@ -6,36 +6,46 @@ import 'core/providers/auth_provider.dart';
 import 'core/providers/session_provider.dart';
 import 'core/providers/tutor_provider.dart';
 import 'core/providers/chat_provider.dart';
+import 'core/services/studyhub_local_backend.dart';
+import 'core/services/app_notification_service.dart';
 import 'data/repositories/auth_repository.dart';
-import 'data/repositories/api_auth_repository.dart';
-import 'data/repositories/mock_auth_repository.dart';
+import 'data/repositories/local_json_auth_repository.dart';
 
-void main() {
-  runApp(const TutoriasApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final backend = StudyHubLocalBackend.instance;
+  await backend.load();
+  await AppNotificationService.instance.initialize();
+
+  runApp(TutoriasApp(backend: backend));
 }
 
-AuthRepository _buildAuthRepository() {
-  const useMockAuth = bool.fromEnvironment('USE_MOCK_AUTH', defaultValue: true);
-  if (useMockAuth) return MockAuthRepository();
-  return const ApiAuthRepository();
+AuthRepository _buildAuthRepository(StudyHubLocalBackend backend) {
+  return LocalJsonAuthRepository(backend: backend);
 }
 
 /// Punto de entrada de la aplicación TutoríasApp.
 class TutoriasApp extends StatelessWidget {
-  const TutoriasApp({super.key});
+  final StudyHubLocalBackend backend;
+
+  const TutoriasApp({super.key, required this.backend});
 
   @override
   Widget build(BuildContext context) {
-    final authRepository = _buildAuthRepository();
+    final authRepository = _buildAuthRepository(backend);
 
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(authRepository: authRepository),
+          create: (_) => AuthProvider(
+            backend: backend,
+            authRepository: authRepository,
+          ),
         ),
-        ChangeNotifierProvider(create: (_) => SessionProvider()),
-        ChangeNotifierProvider(create: (_) => TutorProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => SessionProvider(backend: backend)),
+        ChangeNotifierProvider(create: (_) => TutorProvider(backend: backend)),
+        ChangeNotifierProvider(create: (_) => ChatProvider(backend: backend)),
       ],
       child: MaterialApp.router(
         title: 'TutoríasApp',

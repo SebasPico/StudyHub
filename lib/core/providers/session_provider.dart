@@ -1,16 +1,26 @@
 import 'package:flutter/foundation.dart';
-import '../../data/mock/mock_data.dart';
 import '../../data/models/session_model.dart';
 import '../../data/models/review_model.dart';
+import '../services/studyhub_local_backend.dart';
 
 /// Gestión reactiva de sesiones y reseñas.
 class SessionProvider extends ChangeNotifier {
-  final List<SessionModel> _sessions;
-  final List<ReviewModel> _reviews;
+  final StudyHubLocalBackend _backend;
+  late List<SessionModel> _sessions;
+  late List<ReviewModel> _reviews;
 
-  SessionProvider()
-      : _sessions = List<SessionModel>.from(MockData.sesiones),
-        _reviews = List<ReviewModel>.from(MockData.resenas);
+  SessionProvider({StudyHubLocalBackend? backend})
+      : _backend = backend ?? StudyHubLocalBackend.instance {
+    _sessions = List<SessionModel>.from(_backend.sessions);
+    _reviews = List<ReviewModel>.from(_backend.reviews);
+    _backend.addListener(_syncFromBackend);
+  }
+
+  void _syncFromBackend() {
+    _sessions = List<SessionModel>.from(_backend.sessions);
+    _reviews = List<ReviewModel>.from(_backend.reviews);
+    notifyListeners();
+  }
 
   List<SessionModel> get sessions => List.unmodifiable(_sessions);
   List<ReviewModel> get reviews => List.unmodifiable(_reviews);
@@ -40,43 +50,36 @@ class SessionProvider extends ChangeNotifier {
 
   // ── Acciones ──
 
-  void addSession(SessionModel session) {
-    _sessions.add(session);
-    notifyListeners();
+  Future<void> addSession(SessionModel session) async {
+    await _backend.addSession(session);
+    _syncFromBackend();
   }
 
-  void cancelSession(String sessionId,
+  Future<void> cancelSession(String sessionId,
       {String reason = 'Cancelada por usuario'}) {
-    final idx = _sessions.indexWhere((s) => s.id == sessionId);
-    if (idx == -1) return;
-    _sessions[idx] = _sessions[idx].copyWith(
-      estado: SessionStatus.cancelada,
-      fechaCancelacion: DateTime.now(),
-      motivoCancelacion: reason,
-    );
-    notifyListeners();
+    return _backend.cancelSession(sessionId, reason: reason).then((_) {
+      _syncFromBackend();
+    });
   }
 
-  void confirmSession(String sessionId) {
-    final idx = _sessions.indexWhere((s) => s.id == sessionId);
-    if (idx == -1) return;
-    _sessions[idx] =
-        _sessions[idx].copyWith(estado: SessionStatus.confirmada);
-    notifyListeners();
+  Future<void> confirmSession(String sessionId) async {
+    await _backend.confirmSession(sessionId);
+    _syncFromBackend();
   }
 
-  void rejectSession(String sessionId) {
-    final idx = _sessions.indexWhere((s) => s.id == sessionId);
-    if (idx == -1) return;
-    _sessions[idx] = _sessions[idx].copyWith(
-      estado: SessionStatus.cancelada,
-      motivoCancelacion: 'Rechazada por tutor',
-    );
-    notifyListeners();
+  Future<void> rejectSession(String sessionId) async {
+    await _backend.rejectSession(sessionId);
+    _syncFromBackend();
   }
 
-  void addReview(ReviewModel review) {
-    _reviews.add(review);
-    notifyListeners();
+  Future<void> addReview(ReviewModel review) async {
+    await _backend.addReview(review);
+    _syncFromBackend();
+  }
+
+  @override
+  void dispose() {
+    _backend.removeListener(_syncFromBackend);
+    super.dispose();
   }
 }

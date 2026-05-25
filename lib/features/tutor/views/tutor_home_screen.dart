@@ -5,8 +5,9 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/tutor_provider.dart';
 import '../../../core/providers/session_provider.dart';
-import '../../../data/mock/mock_data.dart';
 import '../../../data/models/session_model.dart';
 
 /// Pantalla principal del tutor — Dashboard.
@@ -15,7 +16,9 @@ class TutorHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tutor = MockData.tutores.first;
+    final auth = context.watch<AuthProvider>();
+    final tutor = context.watch<TutorProvider>().byId(auth.userId) ??
+        context.watch<TutorProvider>().approved.first;
     final sessionProv = context.watch<SessionProvider>();
     final pendientes = sessionProv.byStatus(SessionStatus.pendiente);
 

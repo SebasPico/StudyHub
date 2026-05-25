@@ -6,6 +6,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../core/providers/session_provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/services/app_notification_service.dart';
 import '../../../data/models/session_model.dart';
 
 /// Pantalla de pago simulado (RF-11).
@@ -202,9 +203,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   estado: SessionStatus.pendiente,
                   precio: widget.amount,
                 );
-                context.read<SessionProvider>().addSession(session);
-                setState(() => _isProcessingPayment = false);
-                _showPaymentSuccess(context);
+                try {
+                  await context.read<SessionProvider>().addSession(session);
+                  await AppNotificationService.instance.showBookingConfirmed(
+                    tutorName: widget.tutorName,
+                    subject: widget.subject,
+                    dateTime: DateTime.fromMillisecondsSinceEpoch(
+                      widget.fechaHoraMs,
+                    ),
+                  );
+                  if (!context.mounted) return;
+                  setState(() => _isProcessingPayment = false);
+                  _showPaymentSuccess(context);
+                } catch (_) {
+                  if (!context.mounted) return;
+                  setState(() => _isProcessingPayment = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Ese horario ya no está disponible'),
+                    ),
+                  );
+                }
               },
             ),
             const SizedBox(height: 16),

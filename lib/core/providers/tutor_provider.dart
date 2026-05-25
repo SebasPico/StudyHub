@@ -1,12 +1,22 @@
 import 'package:flutter/foundation.dart';
-import '../../data/mock/mock_data.dart';
 import '../../data/models/tutor_model.dart';
+import '../services/studyhub_local_backend.dart';
 
 /// Gestión reactiva de la lista de tutores (aprobación, eliminación).
 class TutorProvider extends ChangeNotifier {
-  final List<TutorModel> _tutors;
+  final StudyHubLocalBackend _backend;
+  late List<TutorModel> _tutors;
 
-  TutorProvider() : _tutors = List<TutorModel>.from(MockData.tutores);
+  TutorProvider({StudyHubLocalBackend? backend})
+      : _backend = backend ?? StudyHubLocalBackend.instance {
+    _tutors = List<TutorModel>.from(_backend.tutors);
+    _backend.addListener(_syncFromBackend);
+  }
+
+  void _syncFromBackend() {
+    _tutors = List<TutorModel>.from(_backend.tutors);
+    notifyListeners();
+  }
 
   List<TutorModel> get all => List.unmodifiable(_tutors);
   List<TutorModel> get approved =>
@@ -18,19 +28,17 @@ class TutorProvider extends ChangeNotifier {
       _tutors.cast<TutorModel?>().firstWhere((t) => t!.id == id,
           orElse: () => null);
 
-  void approveTutor(String tutorId) {
-    final idx = _tutors.indexWhere((t) => t.id == tutorId);
-    if (idx == -1) return;
-    _tutors[idx] = _tutors[idx].copyWith(aprobadoPorAdmin: true);
-    notifyListeners();
+  Future<void> approveTutor(String tutorId) async {
+    await _backend.approveTutor(tutorId);
+    _syncFromBackend();
   }
 
-  void removeTutor(String tutorId) {
-    _tutors.removeWhere((t) => t.id == tutorId);
-    notifyListeners();
+  Future<void> removeTutor(String tutorId) async {
+    await _backend.removeTutor(tutorId);
+    _syncFromBackend();
   }
 
-  void updateTutor(
+  Future<void> updateTutor(
     String tutorId, {
     String? nombre,
     String? ubicacion,
@@ -39,10 +47,9 @@ class TutorProvider extends ChangeNotifier {
     List<String>? certificados,
     double? tarifaPorHora,
     Modalidad? modalidad,
-  }) {
-    final idx = _tutors.indexWhere((t) => t.id == tutorId);
-    if (idx == -1) return;
-    _tutors[idx] = _tutors[idx].copyWith(
+  }) async {
+    await _backend.updateTutor(
+      tutorId,
       nombre: nombre,
       ubicacion: ubicacion,
       biografia: biografia,
@@ -51,6 +58,12 @@ class TutorProvider extends ChangeNotifier {
       tarifaPorHora: tarifaPorHora,
       modalidad: modalidad,
     );
-    notifyListeners();
+    _syncFromBackend();
+  }
+
+  @override
+  void dispose() {
+    _backend.removeListener(_syncFromBackend);
+    super.dispose();
   }
 }

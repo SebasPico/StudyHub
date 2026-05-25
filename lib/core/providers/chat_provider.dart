@@ -1,19 +1,25 @@
 import 'package:flutter/foundation.dart';
-import '../../data/mock/mock_data.dart';
 import '../../data/models/chat_model.dart';
+import '../services/studyhub_local_backend.dart';
 
 /// Gestión reactiva de conversaciones y mensajes de chat.
 class ChatProvider extends ChangeNotifier {
-  final List<ConversationModel> _conversations;
-  final Map<String, List<ChatMessage>> _messages;
+  final StudyHubLocalBackend _backend;
+  late List<ConversationModel> _conversations;
+  late Map<String, List<ChatMessage>> _messages;
 
-  ChatProvider()
-      : _conversations = List<ConversationModel>.from(MockData.conversaciones),
-        _messages = {
-          'c1': List<ChatMessage>.from(MockData.mensajesChat),
-          'c2': [],
-          'c3': [],
-        };
+  ChatProvider({StudyHubLocalBackend? backend})
+      : _backend = backend ?? StudyHubLocalBackend.instance {
+    _conversations = List<ConversationModel>.from(_backend.conversations);
+    _messages = _backend.messagesByConversation;
+    _backend.addListener(_syncFromBackend);
+  }
+
+  void _syncFromBackend() {
+    _conversations = List<ConversationModel>.from(_backend.conversations);
+    _messages = _backend.messagesByConversation;
+    notifyListeners();
+  }
 
   List<ConversationModel> get conversations =>
       List.unmodifiable(_conversations);
@@ -46,71 +52,33 @@ class ChatProvider extends ChangeNotifier {
     return conv?.id ?? conversationOrUserId;
   }
 
-  void sendMessage({
+  Future<void> sendMessage({
     required String conversationId,
     required String senderId,
     required String receiverId,
     required String text,
     String? receiverName,
     String? receiverPhoto,
-  }) {
-    final key = _resolveKey(conversationId);
-
-    _messages.putIfAbsent(key, () => []);
-    _messages[key]!.add(ChatMessage(
-      id: 'm${_messages[key]!.length + 1}',
-      emisorId: senderId,
-      receptorId: receiverId,
-      contenido: text,
-      fecha: DateTime.now(),
-      leido: false,
-    ));
-
-    // Actualizar o crear conversación
-    final convIdx = _conversations.indexWhere((c) => c.id == key);
-    if (convIdx != -1) {
-      final c = _conversations[convIdx];
-      _conversations[convIdx] = ConversationModel(
-        id: c.id,
-        otroUsuarioId: c.otroUsuarioId,
-        otroUsuarioNombre: c.otroUsuarioNombre,
-        otroUsuarioFotoUrl: c.otroUsuarioFotoUrl,
-        ultimoMensaje: text,
-        fechaUltimoMensaje: DateTime.now(),
-        mensajesNoLeidos: 0,
-      );
-    } else {
-      // Nueva conversación (abierta desde el perfil del tutor)
-      _conversations.insert(
-        0,
-        ConversationModel(
-          id: key,
-          otroUsuarioId: receiverId,
-          otroUsuarioNombre: receiverName ?? 'Tutor',
-          otroUsuarioFotoUrl: receiverPhoto,
-          ultimoMensaje: text,
-          fechaUltimoMensaje: DateTime.now(),
-          mensajesNoLeidos: 0,
-        ),
-      );
-    }
-
-    notifyListeners();
+  }) async {
+    await _backend.sendMessage(
+      conversationId: conversationId,
+      senderId: senderId,
+      receiverId: receiverId,
+      text: text,
+      receiverName: receiverName,
+      receiverPhoto: receiverPhoto,
+    );
+    _syncFromBackend();
   }
 
-  void markAsRead(String conversationId) {
-    final idx = _conversations.indexWhere((c) => c.id == conversationId);
-    if (idx == -1 || _conversations[idx].mensajesNoLeidos == 0) return;
-    final c = _conversations[idx];
-    _conversations[idx] = ConversationModel(
-      id: c.id,
-      otroUsuarioId: c.otroUsuarioId,
-      otroUsuarioNombre: c.otroUsuarioNombre,
-      otroUsuarioFotoUrl: c.otroUsuarioFotoUrl,
-      ultimoMensaje: c.ultimoMensaje,
-      fechaUltimoMensaje: c.fechaUltimoMensaje,
-      mensajesNoLeidos: 0,
-    );
-    notifyListeners();
+  Future<void> markAsRead(String conversationId) async {
+    await _backend.markAsRead(conversationId);
+    _syncFromBackend();
+  }
+
+  @override
+  void dispose() {
+    _backend.removeListener(_syncFromBackend);
+    super.dispose();
   }
 }

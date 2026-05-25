@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/tutor_provider.dart';
 
 // Auth
 import '../../features/auth/views/login_screen.dart';
@@ -32,7 +34,6 @@ import '../../features/sessions/views/session_detail_screen.dart';
 import '../../features/admin/views/admin_dashboard_screen.dart';
 
 // Models
-import '../../data/mock/mock_data.dart';
 import '../../data/models/tutor_model.dart';
 import '../../data/models/session_model.dart';
 
@@ -146,7 +147,12 @@ class AppRouter {
         name: 'tutorDetail',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          final tutor = MockData.tutores.firstWhere((t) => t.id == id);
+          final tutor = context.read<TutorProvider>().byId(id);
+          if (tutor == null) {
+            return const Scaffold(
+              body: Center(child: Text('Tutor no encontrado')),
+            );
+          }
           return TutorDetailScreen(tutor: tutor);
         },
       ),

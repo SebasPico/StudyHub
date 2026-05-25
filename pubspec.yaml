@@ -40,6 +40,9 @@ dependencies:
   cached_network_image: ^3.4.1
   table_calendar: ^3.2.0
   shared_preferences: ^2.5.3
+  path_provider: ^2.1.5
+  flutter_local_notifications: ^17.2.2
+  local_auth: ^2.3.0
 
 dev_dependencies:
   flutter_test:

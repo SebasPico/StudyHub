@@ -6,6 +6,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/services/biometric_service.dart';
 import '../../../data/models/user_model.dart';
 
 /// Pantalla de inicio de sesión.
@@ -22,6 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isSubmitting = false;
+  bool _biometricEnabled = false;
   static final RegExp _emailRegex =
       RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
@@ -45,6 +47,38 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error)),
       );
+      return;
+    }
+
+    await auth.setBiometricEnabled(_biometricEnabled);
+
+    switch (auth.role) {
+      case UserRole.administrador:
+        context.go('/admin');
+      case UserRole.tutor:
+        context.go('/tutor');
+      default:
+        context.go('/student');
+    }
+  }
+
+  Future<void> _unlockWithBiometrics() async {
+    final auth = context.read<AuthProvider>();
+    final biometric = BiometricService.instance;
+    if (!await biometric.canAuthenticate()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Este dispositivo no tiene biometría disponible'),
+        ),
+      );
+      return;
+    }
+
+    final error = await auth.unlockWithBiometrics();
+    if (!mounted) return;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
 
@@ -151,6 +185,29 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
                 const SizedBox(height: 8),
+
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    value: _biometricEnabled,
+                    onChanged: (value) {
+                      setState(() => _biometricEnabled = value);
+                    },
+                    title: const Text('Activar biometría'),
+                    subtitle: const Text('Usar huella o rostro en este dispositivo'),
+                  ),
+                ),
+
+                if (context.watch<AuthProvider>().needsBiometricUnlock) ...[
+                  const SizedBox(height: 8),
+                  SecondaryButton(
+                    text: 'Desbloquear con biometría',
+                    icon: Icons.fingerprint,
+                    onPressed: _unlockWithBiometrics,
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 // Olvidé contraseña
                 Align(

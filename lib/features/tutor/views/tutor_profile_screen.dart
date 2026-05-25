@@ -8,6 +8,7 @@ import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/tutor_provider.dart';
+import '../../../core/services/studyhub_local_backend.dart';
 import '../../../data/models/tutor_model.dart';
 
 /// Pantalla de edición del perfil del tutor (RF-03, RF-04).
@@ -57,10 +58,10 @@ class _TutorProfileScreenState extends State<TutorProfileScreen> {
     super.dispose();
   }
 
-  void _save(TutorModel tutor) {
+  Future<void> _save(TutorModel tutor) async {
     final tarifa =
         double.tryParse(_tarifaController.text) ?? tutor.tarifaPorHora;
-    context.read<TutorProvider>().updateTutor(
+    await context.read<TutorProvider>().updateTutor(
           tutor.id,
           nombre: _nombreController.text.trim(),
           ubicacion: _ubicacionController.text.trim(),
@@ -69,6 +70,10 @@ class _TutorProfileScreenState extends State<TutorProfileScreen> {
           modalidad: _modalidad,
           materias: List.from(_materias),
           certificados: List.from(_certificados),
+        );
+    await context.read<AuthProvider>().updateProfile(
+          nombre: _nombreController.text.trim(),
+          ubicacion: _ubicacionController.text.trim(),
         );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -110,7 +115,7 @@ class _TutorProfileScreenState extends State<TutorProfileScreen> {
   Widget build(BuildContext context) {
     final userId = context.watch<AuthProvider>().userId;
     final tutor = context.watch<TutorProvider>().byId(userId) ??
-        context.watch<TutorProvider>().all.firstOrNull;
+      StudyHubLocalBackend.instance.tutors.firstOrNull;
 
     if (tutor == null) {
       return const Scaffold(

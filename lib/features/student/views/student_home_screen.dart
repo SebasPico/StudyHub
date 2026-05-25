@@ -8,9 +8,10 @@ import '../../../core/widgets/custom_avatar.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/star_rating.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/session_provider.dart';
 import '../../../core/providers/tutor_provider.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../core/services/studyhub_local_backend.dart';
 import '../../../data/models/tutor_model.dart';
 
 /// Pantalla principal del estudiante con búsqueda rápida y tutores destacados.
@@ -19,9 +20,24 @@ class StudentHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final estudiante = MockData.estudianteActual;
+    final auth = context.watch<AuthProvider>();
+    final estudiante = StudyHubLocalBackend.instance.studentById(auth.userId);
     final tutores = context.watch<TutorProvider>().approved;
     final proximaSesion = context.watch<SessionProvider>().upcoming;
+    const materiasPopulares = [
+      'Programación',
+      'Matemáticas',
+      'Inglés',
+      'Física',
+      'Química',
+      'Contabilidad',
+      'Cálculo',
+      'Estadística',
+      'Biología',
+      'Álgebra',
+      'Economía',
+      'Francés',
+    ];
 
     return Scaffold(
       body: SafeArea(
@@ -35,9 +51,13 @@ class StudentHomeScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     CustomAvatar(
-                      imageUrl: estudiante.fotoUrl,
+                      imageUrl: auth.userPhoto ?? estudiante?.fotoUrl,
                       size: 48,
-                      initials: estudiante.nombre.substring(0, 2).toUpperCase(),
+                      initials: (auth.userName.isNotEmpty
+                              ? auth.userName
+                              : estudiante?.nombre ?? 'US')
+                          .substring(0, 2)
+                          .toUpperCase(),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -46,7 +66,9 @@ class StudentHomeScreen extends StatelessWidget {
                         children: [
                           Text('¡Hola!', style: AppTextStyles.body2),
                           Text(
-                            estudiante.nombre,
+                            auth.userName.isNotEmpty
+                                ? auth.userName
+                                : (estudiante?.nombre ?? 'Estudiante'),
                             style: AppTextStyles.heading3,
                           ),
                         ],
@@ -105,11 +127,11 @@ class StudentHomeScreen extends StatelessWidget {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: MockData.materiasPopulares.length,
+                  itemCount: materiasPopulares.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
                     return ActionChip(
-                      label: Text(MockData.materiasPopulares[index]),
+                      label: Text(materiasPopulares[index]),
                       onPressed: () {},
                       backgroundColor:
                           AppColors.primaryLight.withValues(alpha: 0.3),

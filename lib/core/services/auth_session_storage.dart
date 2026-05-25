@@ -8,6 +8,7 @@ class AuthSessionStorage {
   static const _kUserPhoto = 'auth.userPhoto';
   static const _kUserLocation = 'auth.userLocation';
   static const _kUserPhone = 'auth.userPhone';
+  static const _kBiometricEnabled = 'auth.biometricEnabled';
 
   Future<Map<String, String?>> read() async {
     final prefs = await SharedPreferences.getInstance();
@@ -55,5 +56,19 @@ class AuthSessionStorage {
     await prefs.remove(_kUserPhoto);
     await prefs.remove(_kUserLocation);
     await prefs.remove(_kUserPhone);
+  }
+
+  Future<bool> isBiometricEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kBiometricEnabled) ?? false;
+  }
+
+  Future<void> setBiometricEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (value) {
+      await prefs.setBool(_kBiometricEnabled, true);
+    } else {
+      await prefs.remove(_kBiometricEnabled);
+    }
   }
 }

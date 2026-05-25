@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/custom_avatar.dart';
 import '../../../core/widgets/custom_button.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../core/providers/tutor_provider.dart';
 import '../../../data/models/tutor_model.dart';
 
 /// Pantalla para agendar una sesión con un tutor (RF-09).
@@ -57,7 +58,8 @@ class _BookingScreenState extends State<BookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tutor = widget.selectedTutor ?? MockData.tutores.first;
+    final tutor = widget.selectedTutor ??
+        context.watch<TutorProvider>().approved.first;
     final selectedDay = _dias[_selectedDayIndex];
     final availableSlotsCount =
         (selectedDay['slots'] as int).clamp(1, _horarios.length);

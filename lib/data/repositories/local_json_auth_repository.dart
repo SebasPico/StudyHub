@@ -1,0 +1,50 @@
+import '../../core/services/studyhub_local_backend.dart';
+import '../models/auth_session_model.dart';
+import '../models/user_model.dart';
+import 'auth_repository.dart';
+
+/// Implementacion de autenticacion sobre el backend local en JSON.
+class LocalJsonAuthRepository implements AuthRepository {
+  final StudyHubLocalBackend backend;
+
+  const LocalJsonAuthRepository({required this.backend});
+
+  @override
+  Future<AuthSessionModel> login({
+    required String email,
+    required String password,
+  }) async {
+    final session = await backend.authenticate(email, password);
+    return AuthSessionModel(
+      role: session.role,
+      userId: session.userId,
+      userName: session.userName,
+      userPhoto: session.userPhoto,
+      userLocation: session.userLocation,
+      userPhone: session.userPhone,
+    );
+  }
+
+  @override
+  Future<AuthSessionModel> register({
+    required String nombre,
+    required String email,
+    required UserRole rol,
+    required String password,
+  }) async {
+    final session = await backend.register(
+      nombre: nombre,
+      email: email,
+      rol: rol,
+      password: password,
+    );
+    return AuthSessionModel(
+      role: session.role,
+      userId: session.userId,
+      userName: session.userName,
+      userPhoto: session.userPhoto,
+      userLocation: session.userLocation,
+      userPhone: session.userPhone,
+    );
+  }
+}
