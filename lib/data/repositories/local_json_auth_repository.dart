@@ -1,5 +1,6 @@
 import '../../core/services/studyhub_local_backend.dart';
 import '../models/auth_session_model.dart';
+import '../models/auth_failure.dart';
 import '../models/user_model.dart';
 import 'auth_repository.dart';
 
