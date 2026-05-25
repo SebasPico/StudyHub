@@ -14,15 +14,23 @@ class LocalJsonAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    final session = await backend.authenticate(email, password);
-    return AuthSessionModel(
-      role: session.role,
-      userId: session.userId,
-      userName: session.userName,
-      userPhoto: session.userPhoto,
-      userLocation: session.userLocation,
-      userPhone: session.userPhone,
-    );
+    try {
+      final session = await backend.authenticate(email, password);
+      return AuthSessionModel(
+        role: session.role,
+        userId: session.userId,
+        userName: session.userName,
+        userPhoto: session.userPhoto,
+        userLocation: session.userLocation,
+        userPhone: session.userPhone,
+      );
+    } on StateError catch (e) {
+      final msg = e.message ?? '';
+      if (msg.contains('invalid_credentials')) {
+        throw const AuthFailure(AuthFailureCode.invalidCredentials);
+      }
+      throw const AuthFailure(AuthFailureCode.unknown);
+    }
   }
 
   @override
@@ -32,19 +40,27 @@ class LocalJsonAuthRepository implements AuthRepository {
     required UserRole rol,
     required String password,
   }) async {
-    final session = await backend.register(
-      nombre: nombre,
-      email: email,
-      rol: rol,
-      password: password,
-    );
-    return AuthSessionModel(
-      role: session.role,
-      userId: session.userId,
-      userName: session.userName,
-      userPhoto: session.userPhoto,
-      userLocation: session.userLocation,
-      userPhone: session.userPhone,
-    );
+    try {
+      final session = await backend.register(
+        nombre: nombre,
+        email: email,
+        rol: rol,
+        password: password,
+      );
+      return AuthSessionModel(
+        role: session.role,
+        userId: session.userId,
+        userName: session.userName,
+        userPhoto: session.userPhoto,
+        userLocation: session.userLocation,
+        userPhone: session.userPhone,
+      );
+    } on StateError catch (e) {
+      final msg = e.message ?? '';
+      if (msg.contains('user_exists')) {
+        throw const AuthFailure(AuthFailureCode.userAlreadyExists);
+      }
+      throw const AuthFailure(AuthFailureCode.unknown);
+    }
   }
 }
