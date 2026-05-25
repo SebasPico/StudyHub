@@ -36,8 +36,6 @@ import '../../features/admin/views/admin_dashboard_screen.dart';
 // Models
 import '../../data/models/tutor_model.dart';
 import '../../data/models/session_model.dart';
-// Common
-import '../../features/common/mock_splash.dart';
 
 /// Configuración central de rutas de la aplicación.
 class AppRouter {
@@ -56,13 +54,16 @@ class AppRouter {
   }
 
   static final GoRouter router = GoRouter(
-    initialLocation: '/mock',
+    initialLocation: '/login',
     redirect: (context, state) {
       final auth = context.read<AuthProvider>();
       final path = state.uri.path;
 
+      // If auth is still initializing, allow the router to proceed (login
+      // will handle session when ready). This avoids forcing a loading
+      // route that blocks the UI.
       if (!auth.isInitialized) {
-        return path == '/splash' ? null : '/splash';
+        return null;
       }
 
       if (path == '/splash') {
@@ -109,11 +110,7 @@ class AppRouter {
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(
-        path: '/mock',
-        name: 'mock',
-        builder: (context, state) => const MockSplash(),
-      ),
+      // (No mock splash route) 
       GoRoute(
         path: '/login',
         name: 'login',
