@@ -117,6 +117,54 @@ class StudyHubLocalBackend extends ChangeNotifier {
     _timeSlots
       ..clear()
       ..addAll(MockData.horariosDisponibles.map(_timeSlotToMap));
+
+    // Ensure demo student and tutor exist for quick demonstration/login.
+    const demoStudentId = 'demo_student';
+    const demoTutorId = 'demo_tutor';
+
+    if (!_users.any((u) => u['id'] == demoStudentId)) {
+      _users.add(_userSeed(
+        id: demoStudentId,
+        nombre: 'Estudiante Demo',
+        correo: 'student@studyhub.com',
+        rol: UserRole.estudiante,
+        password: 'demo123',
+      ));
+
+      _students.add(_studentToMap(
+        StudentModel(
+          id: demoStudentId,
+          nombre: 'Estudiante Demo',
+          correo: 'student@studyhub.com',
+          fechaRegistro: DateTime.now(),
+        ),
+      ));
+    }
+
+    if (!_users.any((u) => u['id'] == demoTutorId)) {
+      _users.add(_userSeed(
+        id: demoTutorId,
+        nombre: 'Tutor Demo',
+        correo: 'tutor@studyhub.com',
+        rol: UserRole.tutor,
+        password: 'demo123',
+      ));
+
+      _tutors.add(_tutorToMap(
+        TutorModel(
+          id: demoTutorId,
+          nombre: 'Tutor Demo',
+          correo: 'tutor@studyhub.com',
+          fechaRegistro: DateTime.now(),
+          biografia: 'Tutor de demostración',
+          materias: const ['Matemáticas', 'Programación'],
+          certificados: const [],
+          tarifaPorHora: 25000,
+          modalidad: Modalidad.ambas,
+          aprobadoPorAdmin: true,
+        ),
+      ));
+    }
   }
 
   void _replaceStateFromJson(Map<String, dynamic> json) {
