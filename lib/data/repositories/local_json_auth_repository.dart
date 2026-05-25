@@ -27,9 +27,9 @@ class LocalJsonAuthRepository implements AuthRepository {
     } on StateError catch (e) {
       final msg = e.message ?? '';
       if (msg.contains('invalid_credentials')) {
-        throw const AuthFailure(AuthFailureCode.invalidCredentials);
+        throw AuthFailure(AuthFailureCode.invalidCredentials);
       }
-      throw const AuthFailure(AuthFailureCode.unknown);
+      throw AuthFailure(AuthFailureCode.unknown);
     }
   }
 
@@ -58,9 +58,9 @@ class LocalJsonAuthRepository implements AuthRepository {
     } on StateError catch (e) {
       final msg = e.message ?? '';
       if (msg.contains('user_exists')) {
-        throw const AuthFailure(AuthFailureCode.userAlreadyExists);
+        throw AuthFailure(AuthFailureCode.userAlreadyExists);
       }
-      throw const AuthFailure(AuthFailureCode.unknown);
+      throw AuthFailure(AuthFailureCode.unknown);
     }
   }
 }
