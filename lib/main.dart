@@ -15,8 +15,16 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final backend = StudyHubLocalBackend.instance;
-  await backend.load();
-  await AppNotificationService.instance.initialize();
+  // Load backend in background to avoid blocking the first frame.
+  backend.load().then((_) {
+    // Notify listeners in case providers need to refresh UI after load.
+    try {
+      backend.notifyListeners();
+    } catch (_) {}
+  });
+
+  // Initialize notifications asynchronously; don't await to keep startup fast.
+  AppNotificationService.instance.initialize();
 
   runApp(TutoriasApp(backend: backend));
 }
